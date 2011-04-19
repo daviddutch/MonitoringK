@@ -1,4 +1,4 @@
-#include "MovingObject.h"
+#include "movingObject.h"
 #include <iostream>
 #include <string>
 #include <cv.h>

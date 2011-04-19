@@ -5,7 +5,7 @@
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include <map>
-#include "MovingObject.h"
+#include "movingObject.h"
 
 class Sequence
 {
