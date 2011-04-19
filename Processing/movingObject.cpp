@@ -1,10 +1,11 @@
-#include "MovingObject.h"
+#include "movingObject.h"
 #include <iostream>
 #include <string>
 #include <cv.h>
 #include <cxcore.h>
 #include <cvaux.h>
 #include <highgui.h>
+#include "qdom.h"
 
 MovingObject::MovingObject() {
     height = 0;
@@ -16,7 +17,7 @@ MovingObject::MovingObject() {
     nEvents = 0;
 }
 
-MovingObject::MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator)
+MovingObject::MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& player)
 {
     printf("Person(params)\n");
     height = 0;
@@ -26,8 +27,10 @@ MovingObject::MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::Dept
     userGenerator  = uGenerator;
     depthGenerator = dGenerator;
     imageGenerator = iGenerator;
+    g_player       = player;
     nFrame  = -1;
     nEvents = 0;
+    player.TellFrame(depthGenerator.GetName(), startFrameNo);
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.id == this->id;
@@ -70,6 +73,7 @@ void MovingObject::outputImage(Rect rect) {
 }
 
 void MovingObject::outputDepth(Rect rect) {
+    double alpha = 255.0/2048.0;
     printf("outputDepth()\n");
     //Get pointer on depthMap and prepare matrix to get the cut depth image
     const XnDepthPixel* pDepthMap = depthGenerator.GetDepthMap();
@@ -81,7 +85,7 @@ void MovingObject::outputDepth(Rect rect) {
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
             if (y>rect.top && y<rect.bottom && x>rect.left && x<rect.right) { //is it inside the rectangle containing the person
-                depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = pDepthMap[y * XN_VGA_X_RES + x];
+                depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = pDepthMap[y * XN_VGA_X_RES + x] * alpha;
             } else {
                 depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] =  255;
             }
@@ -104,7 +108,7 @@ void MovingObject::outputDepth(Rect rect) {
 }
 
 void MovingObject::update() {
-    printf("update pers()\n");
+    //printf("update pers()\n");
 
     nFrame++;
 
@@ -132,34 +136,55 @@ void MovingObject::update() {
             }
         }
     }
-    printf("ouptut style\n");
-    outputDepth(rect);
-    outputImage(rect);
+    //printf("ouptut style\n");
+    //outputDepth(rect);
+    //outputImage(rect);
 
     XnPoint3D com;
     userGenerator.GetCoM(id, com);
     XnPoint3D com2;
     depthGenerator.ConvertRealWorldToProjective(1, &com, &com2);
     if (com.Z != 0) {
-        printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
-        printf("projective world : (%f, %f, %f)\n", com2.X, com2.Y, com2.Z);
+       // printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
+        //printf("projective world : (%f, %f, %f)\n", com2.X, com2.Y, com2.Z);
         this->com.X = com.X;
         this->com.Y = com.Y;
         this->com.Z = com.Z;
     }
     frames.push_back(Frame(nFrame, rect, com));
     //frames[nFrame].init(nFrame, rect, com);
-    printf("end update pers\n");
+    //printf("end update pers\n");
 }
 float MovingObject::getHeight() {
     return height;
 }
-void MovingObject::toXML() {
-    printf("<movingObject height=\"%f\" z=\"%f\">\n", getHeight(), com.Z);
+void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
+    /*printf("<movingObject height=\"%f\" z=\"%f\">\n", getHeight(), com.Z);
     printf("\t<frames>\n");
     for (int i=0;i<=frames.size();i++){
         frames[i].toXML();
     }
     printf("\t</frames>\n");
-    printf("</movingObject>\n");
+    printf("</movingObject>\n");*/
+
+    XnUInt32 endFrameNo;
+    g_player.TellFrame(depthGenerator.GetName(), endFrameNo);
+
+    printf("*** moving object xml ***\n");
+    QDomElement movingObjectNode = doc.createElement("movingObject");
+    movingObjectNode.setAttribute("startFrameNo",startFrameNo);
+    movingObjectNode.setAttribute("endFrameNo",endFrameNo);
+    movingObjectNode.setAttribute("movingObjectType",0);
+    movingObjectNode.setAttribute("keyImage2d",0);
+    movingObjectNode.setAttribute("keyImage3d",0);
+    sequenceNode.appendChild(movingObjectNode);
+
+    QDomElement eventsNode = doc.createElement("events");
+    movingObjectNode.appendChild(eventsNode);
+
+    QDomElement framesNode = doc.createElement("frames");
+    movingObjectNode.appendChild(framesNode);
+    for (int i=0;i<=frames.size();i++){
+        frames[i].toXML(doc, framesNode);
+    }
 }

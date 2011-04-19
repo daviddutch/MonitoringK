@@ -1,4 +1,5 @@
 #include "frame.h"
+#include "qdom.h"
 
 Frame::Frame(int frame, Rect &zone, XnPoint3D &com)
 {
@@ -6,9 +7,25 @@ Frame::Frame(int frame, Rect &zone, XnPoint3D &com)
     this->zone  = zone;
     this->com   = com;
 }
-void Frame::toXML() {
-    printf("\t\t<frame>\n");
+void Frame::toXML(QDomDocument& doc, QDomElement& framesNode) {
+    /*printf("\t\t<frame>\n");
     printf("\t\t\t<zone t= r= b= l=>\n");
     printf("\t\t\t<com x= y= z=>\n");
-    printf("\t\t</frame>\n");
+    printf("\t\t</frame>\n");*/
+
+    QDomElement frameNode = doc.createElement("frame");
+    framesNode.appendChild(frameNode);
+
+    QDomElement rectZoneNode = doc.createElement("rectZone");
+    rectZoneNode.setAttribute("top",zone.top);
+    rectZoneNode.setAttribute("right",zone.right);
+    rectZoneNode.setAttribute("bottom",zone.bottom);
+    rectZoneNode.setAttribute("left",zone.left);
+    frameNode.appendChild(rectZoneNode);
+
+    QDomElement comNode = doc.createElement("com");
+    comNode.setAttribute("x",com.X);
+    comNode.setAttribute("y",com.Y);
+    comNode.setAttribute("z",com.Z);
+    frameNode.appendChild(comNode);
 }

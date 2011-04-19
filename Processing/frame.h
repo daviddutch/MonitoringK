@@ -4,12 +4,13 @@
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include "defs.h"
+#include "qdom.h"
 
 class Frame
 {
 public:
     Frame(int frame, Rect &zone, XnPoint3D &com);
-    void toXML();
+    void toXML(QDomDocument& doc, QDomElement& framesNode);
 private:
     int frame;
     Rect zone;
