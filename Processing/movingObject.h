@@ -8,31 +8,31 @@
 #include "defs.h"
 #include "frame.h"
 #include "event.h"
+#include "qdom.h"
 
 class MovingObject
 {
 public:
-    MovingObject();
-    MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator);
+    MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& player);
     float getHeight();
     void update();
-    void toXML();
+    void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
+    //MovingObject& operator=(const Date& rhs);  //assignement
 private:
     XnUserID id;
     float height;
     bool movingIn;
     bool movingOut;
-    xn::UserGenerator userGenerator;
-    xn::DepthGenerator depthGenerator;
-    xn::ImageGenerator imageGenerator;
+    xn::UserGenerator& userGenerator;
+    xn::DepthGenerator& depthGenerator;
+    xn::ImageGenerator& imageGenerator;
+    xn::Player& g_player;
     XnPoint3D com; //Center of Mass
-    int nFrame;
-    int nEvents;
-    //Frame frames[100];
-    Event events[100];
+    XnUInt32 startFrameNo;
     std::vector<Frame> frames;
-
+    std::vector<Event> events;
+    int nFrame;
     void outputImage(Rect rect);
     void outputDepth(Rect rect);
 };

@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core
-
+QT       += xml
 QT       -= gui
 
 TARGET = Processing
@@ -16,11 +16,12 @@ CONFIG   -= app_bundle
 INCLUDEPATH += /usr/include/nite
 INCLUDEPATH += /usr/include/ni
 INCLUDEPATH += /usr/include/opencv
+INCLUDEPATH += /home/david/qtsdk-2010.05/qt/include/Qt
 
 LIBS += /home/david/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
 LIBS += /home/david/kinect/Nite-1.3.0.17/Bin/libXnVNite.so
-LIBS += /usr/lib/libglut.so
 
+LIBS += /usr/lib/libglut.so
 LIBS += /usr/lib/libcv.so
 LIBS += /usr/lib/libcvaux.so
 LIBS += /usr/lib/libcxcore.so
