@@ -8,7 +8,7 @@ QT       += core
 
 QT       -= gui
 
-TARGET = Recording2
+TARGET = Recording
 CONFIG   += console
 CONFIG   -= app_bundle
 

@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     CHECK_RC(nRetVal, "Init");
 
     //TEMP : Virtual Kinect ONI file
-    nRetVal = g_Context.OpenFileRecording("Captured.oni");
+    nRetVal = g_Context.OpenFileRecording("Captured5.oni");
     //nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH);
     CHECK_RC(nRetVal, "InitFromXml");
 

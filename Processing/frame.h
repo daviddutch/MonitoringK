@@ -11,6 +11,9 @@ class Frame
 public:
     Frame(int frame, Rect &zone, XnPoint3D &com);
     void toXML(QDomDocument& doc, QDomElement& framesNode);
+    XnPoint3D getCom();
+    Rect getZone();
+    int getId();
 private:
     int frame;
     Rect zone;

@@ -7,6 +7,22 @@ Frame::Frame(int frame, Rect &zone, XnPoint3D &com)
     this->zone  = zone;
     this->com   = com;
 }
+
+XnPoint3D Frame::getCom()
+{
+    return com;
+}
+
+Rect Frame::getZone()
+{
+    return zone;
+}
+
+int Frame::getId()
+{
+    return frame;
+}
+
 void Frame::toXML(QDomDocument& doc, QDomElement& framesNode) {
     /*printf("\t\t<frame>\n");
     printf("\t\t\t<zone t= r= b= l=>\n");

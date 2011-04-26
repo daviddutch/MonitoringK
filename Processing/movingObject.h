@@ -9,12 +9,16 @@
 #include "frame.h"
 #include "event.h"
 #include "qdom.h"
+#include <iostream>
+#include <string>
 
 class MovingObject
 {
 public:
     MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& player);
     float getHeight();
+    float getHeightByFrame(int i);
+    std::string getTypeMovement();
     void update();
     void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
@@ -35,6 +39,7 @@ private:
     int nFrame;
     void outputImage(Rect rect);
     void outputDepth(Rect rect);
+    void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
 };
 
 #endif // MOVINGOBJECT_H

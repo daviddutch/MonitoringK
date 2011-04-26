@@ -132,13 +132,7 @@ void XN_CALLBACK_TYPE LostUser(xn::UserGenerator& generator, XnUserID user, void
 
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
-#define START_CAPTURE_CHECK_RC(rc, what)												\
-        if (nRetVal != XN_STATUS_OK)														\
-{																					\
-        printf("Failed to %s: %s\n", what, xnGetStatusString(rc));				\
-        StopCapture();															\
-        return ;																	\
-}
+
 void CleanupExit()
 {
     if(hasUserInSight)
@@ -175,8 +169,9 @@ void glutDisplay (void)
         g_Player.GetNumFrames(strNodeName,nFrameTot);
         g_Player.TellFrame(strNodeName,nFrame);
 
+
         //finish at end of movie
-        if(nFrame == nFrameTot){
+        if(nFrame == nFrameTot -1){
             CleanupExit();
             return;
         }
