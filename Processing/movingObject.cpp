@@ -9,10 +9,8 @@
 
 using namespace std;
 
-MovingObject::MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& player) :
-    userGenerator(uGenerator),
-    depthGenerator(dGenerator),
-    imageGenerator(iGenerator),
+MovingObject::MovingObject(XnUserID pId, Generators& generators, xn::Player& player) :
+    gen(generators),
     height(0),
     movingIn(false),
     movingOut(false),
@@ -20,8 +18,8 @@ MovingObject::MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::Dept
     g_player(player),
     nFrame(-1)
 {
-    printf("Person(params)\n");
-    player.TellFrame(depthGenerator.GetName(), startFrameNo);
+    printf("MovingObject(params)\n");
+    player.TellFrame(gen.depth.GetName(), startFrameNo);
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.id == this->id;
@@ -29,7 +27,7 @@ bool MovingObject::operator==(const MovingObject &movingObject) const {
 void MovingObject::outputImage(Rect rect) {
     printf("outputImage()\n");
     //Make a copy of the complete ImageMap
-    const XnRGB24Pixel* pImage = imageGenerator.GetRGB24ImageMap();
+    const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
     XnRGB24Pixel ucpImage[XN_VGA_Y_RES*XN_VGA_X_RES];
 
     //Fillup the whole image
@@ -67,7 +65,7 @@ void MovingObject::outputDepth(Rect rect) {
     double alpha = 255.0/2048.0;
     printf("outputDepth()\n");
     //Get pointer on depthMap and prepare matrix to get the cut depth image
-    const XnDepthPixel* pDepthMap = depthGenerator.GetDepthMap();
+    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
     printf("cvCreateMat\n");
     CvMat* depthMetersMat   = cvCreateMat(480, 640, CV_8UC1);
 
@@ -99,17 +97,17 @@ void MovingObject::outputDepth(Rect rect) {
 }
 
 void MovingObject::update() {
-    //printf("update pers()\n");
+    printf("update movingObject()\n");
 
     XnUInt32 nFrame;
-    g_player.TellFrame(depthGenerator.GetName(), nFrame);
+    g_player.TellFrame(gen.depth.GetName(), nFrame);
 
     xn::SceneMetaData sceneMetaData;
     xn::DepthMetaData depthMetaData;
 
-    depthGenerator.GetMetaData(depthMetaData);
+    gen.depth.GetMetaData(depthMetaData);
 
-    userGenerator.GetUserPixels(id, sceneMetaData);
+    gen.user.GetUserPixels(id, sceneMetaData);
     unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
 
     Rect rect;
@@ -132,23 +130,13 @@ void MovingObject::update() {
 
     if(rect.bottom != -1)
     {
+        computeMetrics();
         //printf("Rect %d: %d %d %d %d\n",id, rect.top, rect.left, rect.bottom , rect.right);
 
         //printf("ouptut style\n");
         //outputDepth(rect);
         //outputImage(rect);
 
-        XnPoint3D com;
-        userGenerator.GetCoM(id, com);
-        XnPoint3D com2;
-        depthGenerator.ConvertRealWorldToProjective(1, &com, &com2);
-        if (com.Z != 0) {
-            //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
-            //printf("projective world : (%f, %f, %f)\n", com2.X, com2.Y, com2.Z);
-            this->com.X = com.X;
-            this->com.Y = com.Y;
-            this->com.Z = com.Z;
-        }
         frames.push_back(Frame(nFrame, rect, com));
 
 
@@ -156,10 +144,74 @@ void MovingObject::update() {
     //frames[nFrame].init(nFrame, rect, com);
     //printf("end update pers\n");
 
-
-
-
 }
+void MovingObject::computeMetrics() {
+    xn::SceneMetaData sceneMetaData;
+    gen.user.GetUserPixels(id, sceneMetaData);
+    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
+
+    XnPoint3D com;
+    gen.user.GetCoM(id, com);
+    XnPoint3D com2;
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
+    if (com.Z != 0) {
+        printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
+        printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
+        int i = (int)com2.X;
+        int j = (int)com2.Y;
+
+        XnPoint3D lcom;
+        XnPoint3D rcom;
+        int nbOther = 5;
+        bool found = false;
+        for (int y=j; y<XN_VGA_Y_RES; y++){
+            for(int x=i;x<XN_VGA_X_RES;x--){
+                if (nbOther==0){
+                    lcom.X = x;
+                    lcom.Y = y;
+                    lcom.Z = pDepthMap[y * XN_VGA_X_RES + x];
+                    found = true;
+                    break;
+                }
+                if (userPix[y * XN_VGA_X_RES + x ] != id) {
+                    nbOther--;
+                }
+            }
+            if (found) break;
+        }
+        nbOther = 5;
+        found = false;
+        for (int y=j; y<XN_VGA_Y_RES; y++){
+            for(int x=i;x<XN_VGA_X_RES;x++){
+                if (nbOther==0){
+                    rcom.X = x;
+                    rcom.Y = y;
+                    rcom.Z = pDepthMap[y * XN_VGA_X_RES + x];
+                    found = true;
+                    break;
+                }
+                if (userPix[y * XN_VGA_X_RES + x ] != id) {
+                    nbOther--;
+                }
+            }
+            if (found) break;
+        }
+        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
+        gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
+        printf("real world left : (%f, %f, %f)\n", lcom.X, lcom.Y, lcom.Z);
+        printf("real world right : (%f, %f, %f)\n", rcom.X, rcom.Y, rcom.Z);
+        float xd = rcom.X-lcom.X;
+        float yd = rcom.Y-lcom.Y;
+        float zd = rcom.Z-lcom.Z;
+        float dist = sqrt(xd*xd + yd*yd + zd*zd);
+        printf("real world distance : %f\n", dist);
+        this->com.X = com.X;
+        this->com.Y = com.Y;
+        this->com.Z = com.Z;
+    }
+}
+
 float MovingObject::getHeight() {
 
     return height;
@@ -247,7 +299,7 @@ void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
 
 void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     XnUInt32 endFrameNo;
-    g_player.TellFrame(depthGenerator.GetName(), endFrameNo);
+    g_player.TellFrame(gen.depth.GetName(), endFrameNo);
 
 
 

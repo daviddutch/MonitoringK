@@ -6,6 +6,7 @@
 #include <XnCppWrapper.h>
 #include <vector>
 #include "defs.h"
+#include "generators.h"
 #include "frame.h"
 #include "event.h"
 #include "qdom.h"
@@ -15,7 +16,7 @@
 class MovingObject
 {
 public:
-    MovingObject(XnUserID pId, xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& player);
+    MovingObject(XnUserID pId, Generators& generators, xn::Player& player);
     float getHeight();
     float getHeightByFrame(int i);
     std::string getTypeMovement();
@@ -28,18 +29,18 @@ private:
     float height;
     bool movingIn;
     bool movingOut;
-    xn::UserGenerator& userGenerator;
-    xn::DepthGenerator& depthGenerator;
-    xn::ImageGenerator& imageGenerator;
+    Generators& gen;
     xn::Player& g_player;
     XnPoint3D com; //Center of Mass
     XnUInt32 startFrameNo;
     std::vector<Frame> frames;
     std::vector<Event> events;
+    Metric metric;
     int nFrame;
     void outputImage(Rect rect);
     void outputDepth(Rect rect);
     void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
+    void computeMetrics();
 };
 
 #endif // MOVINGOBJECT_H

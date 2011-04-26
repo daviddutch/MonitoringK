@@ -22,8 +22,13 @@
 #include <GL/glut.h>
 
 
-extern xn::UserGenerator g_UserGenerator;
-extern xn::DepthGenerator g_DepthGenerator;
+xn::UserGenerator g_UserGenerator;
+xn::DepthGenerator g_DepthGenerator;
+
+void initGenerator(xn::UserGenerator user, xn::DepthGenerator depth){
+    g_UserGenerator = user;
+    g_DepthGenerator = depth;
+}
 
 #define MAX_DEPTH 10000
 float g_pDepthHist[MAX_DEPTH];

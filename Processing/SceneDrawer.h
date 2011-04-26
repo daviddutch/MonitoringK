@@ -23,5 +23,6 @@
 #include <XnCppWrapper.h>
 
 void DrawDepthMap(const xn::DepthMetaData& dmd, const xn::SceneMetaData& smd, XnUserID player);
+void initGenerator(xn::UserGenerator user, xn::DepthGenerator depth);
 
 #endif
