@@ -8,10 +8,11 @@
 class Generators
 {
 public:
-    Generators(xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator);
+    Generators(xn::UserGenerator& uGenerator, xn::DepthGenerator& dGenerator, xn::ImageGenerator& iGenerator, xn::Player& pGenerator);
     xn::UserGenerator& user;
     xn::DepthGenerator& depth;
     xn::ImageGenerator& image;
+    xn::Player& player;
 };
 
 #endif // GENERATORS_H

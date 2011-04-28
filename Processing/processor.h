@@ -25,7 +25,6 @@ private:
     static Processor *instance;
 
     Generators* gen;
-    xn::Player player;
     xn::Context context;
     int nUser;
     bool hasUserInSight;

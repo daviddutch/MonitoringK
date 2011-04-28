@@ -11,15 +11,16 @@
 class Sequence
 {
 public:
-    Sequence(Generators& gen, xn::Player& g_player);
+    Sequence(Generators& gen);
     void update();
     void toXML(QDomDocument& doc, QDomElement& movieNode);
 
 private:
     XnUInt32 startFrame;
-    xn::Player& g_player;
     Generators& gen;
     std::map<int, MovingObject> movingObjects;
+    XnPoint3D getComByUser(int id);
+    bool isTwoPointClose(XnPoint3D p1, XnPoint3D p2);
 };
 
 #endif // SEQUENCE_H

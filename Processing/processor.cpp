@@ -68,8 +68,6 @@ int Processor::start(int argc, char **argv) {
     rc = context.FindExistingNode(XN_NODE_TYPE_IMAGE, g_image);
     CHECK_RC(rc, "Find image generator");
 
-    gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image);
-
     initGenerator(g_UserGenerator, g_DepthGenerator);
 
     if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON) ||
@@ -93,6 +91,7 @@ int Processor::start(int argc, char **argv) {
     g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
     //Init Player
+    xn::Player player;
     xn::NodeInfoList list;
     rc = context.EnumerateExistingNodes(list);
     if (rc == XN_STATUS_OK)
@@ -109,6 +108,8 @@ int Processor::start(int argc, char **argv) {
     }else{
         printf("Player: %s\n", xnGetStatusString(rc));
     }
+
+    gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image, player);
 
     strNodeName = g_DepthGenerator.GetName();
     createXML();
@@ -129,7 +130,7 @@ int Processor::start(int argc, char **argv) {
 void Processor::createXML()
 {
     XnUInt32 nFrameTot;
-    player.GetNumFrames(strNodeName,nFrameTot);
+    gen->player.GetNumFrames(strNodeName,nFrameTot);
 
     //Create XML
     QDomImplementation impl = QDomDocument().implementation();
@@ -170,7 +171,7 @@ void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID 
     printf("NewUser %d\n", user);
     if (!instance->hasUserInSight){
         instance->hasUserInSight = true;
-        instance->sequence = new Sequence((*(instance->gen)), instance->player);
+        instance->sequence = new Sequence((*(instance->gen)));
     }
     instance->nUser++;
 }
@@ -216,8 +217,8 @@ void Processor::DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, doubl
 void Processor::glutDisplay (void)
 {
         XnUInt32 nFrame, nFrameTot;
-        instance->player.GetNumFrames(instance->strNodeName,nFrameTot);
-        instance->player.TellFrame(instance->strNodeName,nFrame);
+        instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
+        instance->gen->player.TellFrame(instance->strNodeName,nFrame);
 
 
         //finish at end of movie
