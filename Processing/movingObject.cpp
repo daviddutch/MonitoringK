@@ -150,8 +150,8 @@ void MovingObject::update() {
     }
     //frames[nFrame].init(nFrame, rect, com);
     //printf("end update pers\n");
-
 }
+
 void MovingObject::computeMetrics() {
     xn::SceneMetaData sceneMetaData;
     gen.user.GetUserPixels(id, sceneMetaData);
@@ -212,7 +212,8 @@ void MovingObject::computeMetrics() {
             float xd = rcom.X-lcom.X;
             float yd = rcom.Y-lcom.Y;
             float zd = rcom.Z-lcom.Z;
-            float dist = sqrt(xd*xd + yd*yd + zd*zd);
+            //float dist = sqrt(xd*xd + yd*yd + zd*zd);
+            float dist = getDistance(lcom, rcom);
             printf("real world %d distance : %f\n", id, dist);
         }
         this->com.X = com2.X;
@@ -235,41 +236,6 @@ float MovingObject::getHeightByFrame(int i)
     printf("rect top:%f bottom:%f height:%f\n", r.top, r.bottom, r.top-r.bottom);
     return 0.0;
 }
-/*
-std::string MovingObject::getTypeMovement()
-{
-    float delta=0, firstZ = 0, lastZ = 0;
-    int keyFrame = 0, firstFrame = 0, lastFrame = 0;
-    bool first = true;
-    for (int i=1;i<frames.size();i++){
-        float z = frames[i].getCom().Z;
-        if(z < 10000 && z > 0.1){
-            if(first){
-                firstZ = z;
-                firstFrame = i;
-            }
-            lastZ = z;
-            lastFrame = i;
-            first = false;
-        }
-    }
-    delta = lastZ - firstZ;
-    keyFrame = (lastFrame - firstFrame) / 2;
-
-    getHeightByFrame(keyFrame);
-
-    string typeMovement;
-    if(delta>0)
-        typeMovement = "go out";
-    else if(delta<0)
-        typeMovement = "go in";
-    else
-        typeMovement = "unknown movement";
-
-    printf("nbFrames:%d delta:%f firstZ:%f lastZ:%f typeMovement:%s\n",frames.size(), delta, firstZ, lastZ, typeMovement.c_str());
-
-    return typeMovement;
-}*/
 
 void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
 {
@@ -315,7 +281,7 @@ float MovingObject::checkDistance()
         distance += getDistance(last, current);
         last = current;
     }
-    printf("distance tot %d: %f", id, distance);
+    printf("distance tot %d: %f\n", id, distance);
 
     return distance;
 }
@@ -330,6 +296,7 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
 
     checkDistance();
+    outputImagesKey();
 
     printf("*** moving object xml %d***\n", id);
     QDomElement movingObjectNode = doc.createElement("movingObject");
@@ -350,4 +317,22 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     for (int i=0;i<=frames.size();i++){
         frames[i].toXML(doc, framesNode);
     }
+}
+
+void MovingObject::outputImagesKey()
+{
+    int key = frames[frames.size()/2].getId();
+    printf("key: %d\n", key);
+    gen.player.SeekToFrame(gen.depth.GetName(),key, XN_PLAYER_SEEK_SET);
+    XnUInt32 no;
+    gen.player.TellFrame(gen.depth.GetName(), no);
+    printf("seek: %d\n", no);
+
+    Rect rect;
+    rect.bottom    = XN_VGA_Y_RES;
+    rect.left      = 0;
+    rect.top       = 0;
+    rect.right     = XN_VGA_X_RES;
+    outputImage(rect);
+    //outputDepth(rect);
 }

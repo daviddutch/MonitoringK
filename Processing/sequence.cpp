@@ -26,10 +26,10 @@ void Sequence::update() {
             comUser = movingObjects.at(user).getCom();
             comNew = getComByUser(movingObjects.at(user).getId());
             if(comNew.X<-0.1 || comNew.X >0.1){
-                printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
-                printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
-                if(isTwoPointClose(comUser, comNew))
-                    printf("the two points are close !\n");
+                //printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
+                //printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
+                //if(isTwoPointClose(comUser, comNew))
+                //    printf("the two points are close !\n");
             }
         }
         //if new user create object
@@ -72,7 +72,6 @@ bool Sequence::isTwoPointClose(XnPoint3D p1, XnPoint3D p2)
 {
     //sqrt[(Xa-Xb)²+(Ya-Yb)²+(Za-Zb)²]
     float dist = sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
-    printf("distance: %f \n", dist);
     return (dist < 500);
 }
 

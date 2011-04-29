@@ -21,7 +21,6 @@ public:
     float getHeightByFrame(int i);
     XnPoint3D getCom();
     int getId();
-    std::string getTypeMovement();
     void update();
     void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
@@ -44,6 +43,7 @@ private:
     float checkDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeMetrics();
+    void outputImagesKey();
 };
 
 #endif // MOVINGOBJECT_H

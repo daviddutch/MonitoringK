@@ -188,9 +188,10 @@ void Processor::CleanupExit()
 {
     if(instance->hasUserInSight)
         instance->sequence->toXML(instance->doc, instance->movieNode);
-    instance->context.Shutdown();
 
     instance->writeXML();
+
+    instance->context.Shutdown();
 
     exit (1);
 }
