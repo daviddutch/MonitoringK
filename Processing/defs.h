@@ -1,3 +1,5 @@
+#include <XnOpenNI.h>
+
 #ifndef DEFS_H
 #define DEFS_H
 
@@ -19,6 +21,13 @@ struct Rect {
     int right;
     int bottom;
     int left;
+};
+
+struct Rect3D {
+    XnPoint3D top;
+    XnPoint3D right;
+    XnPoint3D bottom;
+    XnPoint3D left;
 };
 
 struct Metric {

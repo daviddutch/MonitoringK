@@ -9,20 +9,27 @@
 
 using namespace std;
 
-MovingObject::MovingObject(XnUserID pId, Generators& generators, xn::Player& player) :
+MovingObject::MovingObject(XnUserID pId, Generators& generators) :
     gen(generators),
     height(0),
     movingIn(false),
     movingOut(false),
     id(pId),
-    g_player(player),
     nFrame(-1)
 {
     printf("MovingObject(params)\n");
-    player.TellFrame(gen.depth.GetName(), startFrameNo);
+    gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.id == this->id;
+}
+XnPoint3D MovingObject::getCom()
+{
+    return com;
+}
+int MovingObject::getId()
+{
+    return id;
 }
 void MovingObject::outputImage(Rect rect) {
     printf("outputImage()\n");
@@ -97,10 +104,10 @@ void MovingObject::outputDepth(Rect rect) {
 }
 
 void MovingObject::update() {
-    printf("update movingObject()\n");
+    //printf("update movingObject()\n");
 
     XnUInt32 nFrame;
-    g_player.TellFrame(gen.depth.GetName(), nFrame);
+    gen.player.TellFrame(gen.depth.GetName(), nFrame);
 
     xn::SceneMetaData sceneMetaData;
     xn::DepthMetaData depthMetaData;
@@ -143,8 +150,8 @@ void MovingObject::update() {
     }
     //frames[nFrame].init(nFrame, rect, com);
     //printf("end update pers\n");
-
 }
+
 void MovingObject::computeMetrics() {
     xn::SceneMetaData sceneMetaData;
     gen.user.GetUserPixels(id, sceneMetaData);
@@ -153,11 +160,11 @@ void MovingObject::computeMetrics() {
     XnPoint3D com;
     gen.user.GetCoM(id, com);
     XnPoint3D com2;
-    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    gen.depth.ConvertProjectiveToRealWorld(1, &com, &com2);
     const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
     if (com.Z != 0) {
-        printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
-        printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
+        //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
+        //printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
         int i = (int)com2.X;
         int j = (int)com2.Y;
 
@@ -200,16 +207,20 @@ void MovingObject::computeMetrics() {
         }
         gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
         gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
-        printf("real world left : (%f, %f, %f)\n", lcom.X, lcom.Y, lcom.Z);
-        printf("real world right : (%f, %f, %f)\n", rcom.X, rcom.Y, rcom.Z);
-        float xd = rcom.X-lcom.X;
-        float yd = rcom.Y-lcom.Y;
-        float zd = rcom.Z-lcom.Z;
-        float dist = sqrt(xd*xd + yd*yd + zd*zd);
-        printf("real world distance : %f\n", dist);
-        this->com.X = com.X;
-        this->com.Y = com.Y;
-        this->com.Z = com.Z;
+        if(lcom.X > 0.1 && rcom.X > 0.1){
+            printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
+            printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
+            float xd = rcom.X-lcom.X;
+            float yd = rcom.Y-lcom.Y;
+            float zd = rcom.Z-lcom.Z;
+            //float dist = sqrt(xd*xd + yd*yd + zd*zd);
+            float dist = getDistance(lcom, rcom);
+            printf("real world %d distance : %f\n", id, dist);
+        }
+        this->com.X = com2.X;
+        this->com.Y = com2.Y;
+        this->com.Z = com2.Z;
+
     }
 }
 
@@ -225,41 +236,6 @@ float MovingObject::getHeightByFrame(int i)
     Rect r = frames[i].getZone();
     printf("rect top:%f bottom:%f height:%f\n", r.top, r.bottom, r.top-r.bottom);
     return 0.0;
-}
-
-std::string MovingObject::getTypeMovement()
-{
-    float delta=0, firstZ = 0, lastZ = 0;
-    int keyFrame = 0, firstFrame = 0, lastFrame = 0;
-    bool first = true;
-    for (int i=1;i<frames.size();i++){
-        float z = frames[i].getCom().Z;
-        if(z < 10000 && z > 0.1){
-            if(first){
-                firstZ = z;
-                firstFrame = i;
-            }
-            lastZ = z;
-            lastFrame = i;
-            first = false;
-        }
-    }
-    delta = lastZ - firstZ;
-    keyFrame = (lastFrame - firstFrame) / 2;
-
-    getHeightByFrame(keyFrame);
-
-    string typeMovement;
-    if(delta>0)
-        typeMovement = "go out";
-    else if(delta<0)
-        typeMovement = "go in";
-    else
-        typeMovement = "unknown movement";
-
-    printf("nbFrames:%d delta:%f firstZ:%f lastZ:%f typeMovement:%s\n",frames.size(), delta, firstZ, lastZ, typeMovement.c_str());
-
-    return typeMovement;
 }
 
 void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
@@ -294,11 +270,41 @@ void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
             lastZ = z;
         }
     }
+<<<<<<< HEAD
+=======
+}
+
+float MovingObject::checkDistance()
+{
+    float distance = 0.0;
+    XnPoint3D current;
+    XnPoint3D last = frames[0].getCom();
+    for (int i=1;i<frames.size();i++){
+        current = frames[i].getCom();
+        distance += getDistance(last, current);
+        last = current;
+    }
+    printf("distance tot %d: %f\n", id, distance);
+
+    return distance;
+}
+
+float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2)
+{
+    return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
+>>>>>>> 3e8527d5bf51527657aba000bdb6812819fbc8cd
 }
 
 void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     XnUInt32 endFrameNo;
+<<<<<<< HEAD
     g_player.TellFrame(gen.depth.GetName(), endFrameNo);
+=======
+    gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
+
+    checkDistance();
+    outputImagesKey();
+>>>>>>> 3e8527d5bf51527657aba000bdb6812819fbc8cd
 
     printf("*** moving object xml %d***\n", id);
     QDomElement movingObjectNode = doc.createElement("movingObject");
@@ -319,4 +325,22 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     for (int i=0;i<=frames.size();i++){
         frames[i].toXML(doc, framesNode);
     }
+}
+
+void MovingObject::outputImagesKey()
+{
+    int key = frames[frames.size()/2].getId();
+    printf("key: %d\n", key);
+    gen.player.SeekToFrame(gen.depth.GetName(),key, XN_PLAYER_SEEK_SET);
+    XnUInt32 no;
+    gen.player.TellFrame(gen.depth.GetName(), no);
+    printf("seek: %d\n", no);
+
+    Rect rect;
+    rect.bottom    = XN_VGA_Y_RES;
+    rect.left      = 0;
+    rect.top       = 0;
+    rect.right     = XN_VGA_X_RES;
+    outputImage(rect);
+    //outputDepth(rect);
 }
