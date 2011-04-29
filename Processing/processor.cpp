@@ -27,19 +27,11 @@ Processor::Processor() {
 }
 
 Processor* Processor::getInstance() {
-    if (NULL == instance)
-      {
-        std::cout << "creating singleton." << std::endl;
+    if (NULL == instance) {
         instance =  new Processor();
-      }
-    else
-      {
-        std::cout << "singleton already created!" << std::endl;
-      }
-
+    }
     return instance;
-  }
-
+}
 
 int Processor::start(int argc, char **argv) {
     fileName = argv[1];
@@ -73,20 +65,17 @@ int Processor::start(int argc, char **argv) {
     initGenerator(g_UserGenerator, g_DepthGenerator);
 
     if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON) ||
-            !g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
-    {
-            printf("User generator doesn't support either skeleton or pose detection.\n");
-            return XN_STATUS_ERROR;
+            !g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION)) {
+        printf("User generator doesn't support either skeleton or pose detection.\n");
+        return XN_STATUS_ERROR;
     }
     XnBool isSupported = g_DepthGenerator.IsCapabilitySupported("AlternativeViewPoint");
-    if(TRUE == isSupported)
-    {
+    if(TRUE == isSupported) {
       XnStatus res = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_image);
-      if(XN_STATUS_OK != res)
-      {
+      if(XN_STATUS_OK != res) {
         printf("Getting and setting AlternativeViewPoint failed: %s\n", xnGetStatusString(res));
       }
-    }else{
+    } else {
         printf("AlternativeViewPoint not supported");
     }
 
@@ -95,14 +84,10 @@ int Processor::start(int argc, char **argv) {
     //Init Player
     xn::NodeInfoList list;
     rc = context.EnumerateExistingNodes(list);
-    if (rc == XN_STATUS_OK)
-    {
-        for (xn::NodeInfoList::Iterator it = list.Begin(); it != list.End(); ++it)
-        {
-                switch ((*it).GetDescription().Type)
-                {
-                case XN_NODE_TYPE_PLAYER:
-
+    if (rc == XN_STATUS_OK) {
+        for (xn::NodeInfoList::Iterator it = list.Begin(); it != list.End(); ++it) {
+                switch ((*it).GetDescription().Type) {
+                    case XN_NODE_TYPE_PLAYER:
                         (*it).GetInstance(player);
                 }
         }
@@ -112,7 +97,6 @@ int Processor::start(int argc, char **argv) {
 
     strNodeName = g_DepthGenerator.GetName();
     createXML();
-
 
     rc = context.StartGeneratingAll();
     CHECK_RC(rc, "StartGenerating");
@@ -126,8 +110,7 @@ int Processor::start(int argc, char **argv) {
     glutMainLoop();
 }
 
-void Processor::createXML()
-{
+void Processor::createXML() {
     XnUInt32 nFrameTot;
     player.GetNumFrames(strNodeName,nFrameTot);
 
@@ -153,8 +136,7 @@ void Processor::createXML()
     //printf("info player: %s TellTimestamp:%d \n", g_Player.GetInfo().GetDescription().Type, tmp);
 }
 
-void Processor::writeXML()
-{
+void Processor::writeXML() {
     //Write XML file
     char xmlFileName [50];
     sprintf (xmlFileName, "%s.xml", dateStart.c_str());
@@ -183,8 +165,7 @@ void XN_CALLBACK_TYPE Processor::LostUser(xn::UserGenerator& generator, XnUserID
         }
 }
 
-void Processor::CleanupExit()
-{
+void Processor::CleanupExit() {
     if(instance->hasUserInSight)
         instance->sequence->toXML(instance->doc, instance->movieNode);
     instance->context.Shutdown();
@@ -193,8 +174,7 @@ void Processor::CleanupExit()
 
     exit (1);
 }
-void Processor::DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, double g, double b)
-{
+void Processor::DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, double g, double b) {
         static XnFloat pt[3];
 
         pt[0] = ptIn.X;
@@ -213,8 +193,7 @@ void Processor::DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, doubl
 }
 
 // this function is called each frame
-void Processor::glutDisplay (void)
-{
+void Processor::glutDisplay (void) {
         XnUInt32 nFrame, nFrameTot;
         instance->player.GetNumFrames(instance->strNodeName,nFrameTot);
         instance->player.TellFrame(instance->strNodeName,nFrame);

@@ -161,6 +161,7 @@ void MovingObject::computeMetrics() {
         int i = (int)com2.X;
         int j = (int)com2.Y;
 
+        //computes the with of the object on the center of gravity
         XnPoint3D lcom;
         XnPoint3D rcom;
         int nbOther = 5;
@@ -293,15 +294,11 @@ void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
             lastZ = z;
         }
     }
-
-
 }
 
 void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     XnUInt32 endFrameNo;
     g_player.TellFrame(gen.depth.GetName(), endFrameNo);
-
-
 
     printf("*** moving object xml %d***\n", id);
     QDomElement movingObjectNode = doc.createElement("movingObject");

@@ -24,8 +24,6 @@ void Sequence::update() {
         //if new user create object
         if(movingObjects.find(user) == movingObjects.end()){
             movingObjects.insert(std::map<int, MovingObject>::value_type(user, MovingObject(user, gen, g_player)));
-
-            //movingObjects[user] = MovingObject(user, userGenerator, depthGenerator, imageGenerator, g_player);
         }
         movingObjects.find(user)->second.update(); //tells the moving object that there is new data. he can update his self
     }
