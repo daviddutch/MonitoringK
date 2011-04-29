@@ -33,6 +33,7 @@ private:
     Generators& gen;
     XnPoint3D com; //Center of Mass
     XnUInt32 startFrameNo;
+    XnRGB24Pixel comColor;
     std::vector<Frame> frames;
     std::vector<Event> events;
     Metric metric;
@@ -43,6 +44,7 @@ private:
     float checkDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeMetrics();
+    void computeComColor();
     void outputImagesKey();
 };
 

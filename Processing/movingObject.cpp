@@ -33,6 +33,16 @@ int MovingObject::getId()
 }
 void MovingObject::outputImage(Rect rect) {
     printf("outputImage()\n");
+    XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
+    gen.player.TellFrame(gen.depth.GetName(), nFrame);
+
+    Rect rect2;
+    rect2.top    = rect.top+2;
+    rect2.right  = rect.right-2;
+    rect2.bottom = rect.bottom-2;
+    rect2.left   = rect.left+2;
+
+
     //Make a copy of the complete ImageMap
     const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
     XnRGB24Pixel ucpImage[XN_VGA_Y_RES*XN_VGA_X_RES];
@@ -40,14 +50,20 @@ void MovingObject::outputImage(Rect rect) {
     //Fillup the whole image
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
-            if (y>rect.top && y<rect.bottom && x>rect.left && x<rect.right) { //is it inside the rectangle containing the person
+            if (y>=rect.top && y<=rect.bottom && x>=rect.left && x<=rect.right) { //is it inside the rectangle containing the person
+                if (y>=rect2.top && y<=rect2.bottom && x>=rect2.left && x<=rect2.right) {
+                    ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
+                    ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
+                    ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
+                }else{
+                    ucpImage[y * XN_VGA_X_RES + x ].nRed   = 139;
+                    ucpImage[y * XN_VGA_X_RES + x ].nGreen = 0;
+                    ucpImage[y * XN_VGA_X_RES + x ].nBlue  = 0;
+                }
+            } else {
                 ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
                 ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
                 ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
-            } else {
-                ucpImage[y * XN_VGA_X_RES + x ].nRed   = 255;
-                ucpImage[y * XN_VGA_X_RES + x ].nGreen = 255;
-                ucpImage[y * XN_VGA_X_RES + x ].nBlue  = 255;
             }
         }
     }
@@ -138,6 +154,7 @@ void MovingObject::update() {
     if(rect.bottom != -1)
     {
         computeMetrics();
+        computeComColor();
         //printf("Rect %d: %d %d %d %d\n",id, rect.top, rect.left, rect.bottom , rect.right);
 
         //printf("ouptut style\n");
@@ -152,6 +169,99 @@ void MovingObject::update() {
     //printf("end update pers\n");
 }
 
+//Source : http://www.compuphase.com/cmetric.htm
+double ColourDistance(XnRGB24Pixel c1, XnRGB24Pixel c2)
+{
+  long rmean = ( (long)c1.nRed + (long)c2.nRed ) / 2;
+  long r = (long)c1.nRed - (long)c2.nRed;
+  long g = (long)c1.nGreen - (long)c2.nGreen;
+  long b = (long)c1.nBlue - (long)c2.nBlue;
+  return sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
+}
+//TODO: checkout on x and y out of the frame (segmentation fault)
+void MovingObject::computeComColor(){
+    XnPoint3D com;
+    gen.user.GetCoM(id, com);
+    XnPoint3D com2;
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    int zoneSize = 10;
+
+    if (com.Z != 0) {
+        int i = (int)com2.X;
+        int j = (int)com2.Y;
+
+        const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
+
+        XnRGB24Pixel average;
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+        int nPixel = 0;
+        printf("x, y : (%d, %d)\n", i, j);
+        for (int x=i-zoneSize; x<i+zoneSize; x++){
+            for (int y=j-zoneSize; y<j+zoneSize; y++){
+                red   += pImage[y * XN_VGA_X_RES + x ].nRed;
+                green += pImage[y * XN_VGA_X_RES + x ].nGreen;
+                blue  += pImage[y * XN_VGA_X_RES + x ].nBlue;
+                nPixel++;
+            }
+        }
+        average.nRed   = red/nPixel;
+        average.nGreen = green/nPixel;
+        average.nBlue  = blue/nPixel;
+
+        if (comColor.nRed==0 && comColor.nGreen==0 && comColor.nBlue==0){
+
+        }
+
+        double dist = ColourDistance(comColor, average);
+
+        printf("color dist with special is : %f\n", dist);
+
+        dist = sqrt(pow(comColor.nRed-average.nRed,2) + pow(comColor.nGreen-average.nGreen,2) + pow(comColor.nBlue-average.nBlue,2));
+
+        printf("color dist with normal is : %f\n", dist);
+
+        comColor.nRed  = average.nRed;
+        comColor.nGreen = average.nGreen;
+        comColor.nBlue  = average.nBlue;
+
+        printf("Com color : (%d, %d, %d)\n", average.nRed, average.nGreen, average.nBlue);
+
+        /*
+        Rect rect;
+        rect.bottom    = XN_VGA_Y_RES;
+        rect.left      = 0;
+        rect.top       = 0;
+        rect.right     = XN_VGA_X_RES;
+        outputImage(rect);
+        */
+
+        //if (dist>50){
+            Rect rect;
+            rect.top       = j-zoneSize;
+            rect.right     = i+zoneSize;
+            rect.bottom    = j+zoneSize;
+            rect.left      = i-zoneSize;
+            outputImage(rect);
+        //}
+
+        /*
+        for (int y=0; y<XN_VGA_Y_RES; y++){
+            for(int x=0;x<XN_VGA_X_RES;x++){
+                if (userPix[y * XN_VGA_X_RES + x ] == id) {
+                    if (y<rect.top) rect.top=y;
+                    if (x>rect.right) rect.right=x;
+                    if (y>rect.bottom) rect.bottom=y;
+                    if (x<rect.left) rect.left=x;
+                }
+            }
+        }*/
+
+
+    }
+}
+
 void MovingObject::computeMetrics() {
     xn::SceneMetaData sceneMetaData;
     gen.user.GetUserPixels(id, sceneMetaData);
@@ -160,7 +270,7 @@ void MovingObject::computeMetrics() {
     XnPoint3D com;
     gen.user.GetCoM(id, com);
     XnPoint3D com2;
-    gen.depth.ConvertProjectiveToRealWorld(1, &com, &com2);
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
     const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
     if (com.Z != 0) {
         //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
@@ -210,10 +320,6 @@ void MovingObject::computeMetrics() {
         if(lcom.X > 0.1 && rcom.X > 0.1){
             printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
             printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
-            float xd = rcom.X-lcom.X;
-            float yd = rcom.Y-lcom.Y;
-            float zd = rcom.Z-lcom.Z;
-            //float dist = sqrt(xd*xd + yd*yd + zd*zd);
             float dist = getDistance(lcom, rcom);
             printf("real world %d distance : %f\n", id, dist);
         }
@@ -270,12 +376,9 @@ void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
             lastZ = z;
         }
     }
-<<<<<<< HEAD
-=======
 }
 
-float MovingObject::checkDistance()
-{
+float MovingObject::checkDistance() {
     float distance = 0.0;
     XnPoint3D current;
     XnPoint3D last = frames[0].getCom();
@@ -289,22 +392,17 @@ float MovingObject::checkDistance()
     return distance;
 }
 
-float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2)
-{
+float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
     return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
->>>>>>> 3e8527d5bf51527657aba000bdb6812819fbc8cd
 }
 
 void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     XnUInt32 endFrameNo;
-<<<<<<< HEAD
-    g_player.TellFrame(gen.depth.GetName(), endFrameNo);
-=======
+
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
 
     checkDistance();
     outputImagesKey();
->>>>>>> 3e8527d5bf51527657aba000bdb6812819fbc8cd
 
     printf("*** moving object xml %d***\n", id);
     QDomElement movingObjectNode = doc.createElement("movingObject");
@@ -327,8 +425,7 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     }
 }
 
-void MovingObject::outputImagesKey()
-{
+void MovingObject::outputImagesKey() {
     int key = frames[frames.size()/2].getId();
     printf("key: %d\n", key);
     gen.player.SeekToFrame(gen.depth.GetName(),key, XN_PLAYER_SEEK_SET);
@@ -336,11 +433,6 @@ void MovingObject::outputImagesKey()
     gen.player.TellFrame(gen.depth.GetName(), no);
     printf("seek: %d\n", no);
 
-    Rect rect;
-    rect.bottom    = XN_VGA_Y_RES;
-    rect.left      = 0;
-    rect.top       = 0;
-    rect.right     = XN_VGA_X_RES;
-    outputImage(rect);
+    outputImage(frames[frames.size()/2].getZone());
     //outputDepth(rect);
 }
