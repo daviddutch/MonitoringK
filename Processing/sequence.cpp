@@ -12,7 +12,7 @@ Sequence::Sequence(Generators& generators, std::string d) :
 }
 
 void Sequence::update() {
-    //printf("update seq()\n");
+    printf("update seq()\n");
     int nbUsers = gen.user.GetNumberOfUsers();
 
     if (nbUsers==0){
@@ -25,7 +25,7 @@ void Sequence::update() {
         if(movingObjects.find(user) != movingObjects.end()){
             XnPoint3D comUser, comNew;
             comUser = movingObjects.at(user).getCom();
-            comNew = getComByUser(movingObjects.at(user).getId());
+            comNew = getComByUser(movingObjects.at(user).getXnId());
             if(comNew.X<-0.1 || comNew.X >0.1){
                 //printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
                 //printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
@@ -39,7 +39,7 @@ void Sequence::update() {
         }
         movingObjects.find(user)->second.update(); //tells the moving object that there is new data. he can update his self
     }
-    //printf("end update seq\n");
+    printf("end update seq\n");
 }
 
 void Sequence::toXML(QDomDocument& doc, QDomElement& movieNode) {

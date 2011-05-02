@@ -114,23 +114,25 @@ int Processor::start(int argc, char **argv) {
     g_UserGenerator.RegisterUserCallbacks(Processor::NewUser, Processor::LostUser, NULL, hUserCBs);
 
 
-
     XnUInt32 nFrame, nFrameTot;
     instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
 
 
-
-
-    while(nFrame != nFrameTot -1){
-        instance->gen->player.TellFrame(instance->strNodeName,nFrame);
-        // Read next available data
-        instance->context.WaitAndUpdateAll();
-
-        if (instance->hasUserInSight) instance->sequence->update();
+    if (true){
+        while(nFrame != nFrameTot -1){
+            printf("start while\n");
+            instance->gen->player.TellFrame(instance->strNodeName,nFrame);
+            // Read next available data
+            instance->context.WaitAndUpdateAll();
+            printf("between\n");
+            if (instance->hasUserInSight) instance->sequence->update();
+            printf("end while\n");
+        }
+        CleanupExit();
+    }else{
+        glInit(&argc, argv);
+        glutMainLoop();
     }
-    CleanupExit();
-    //glInit(&argc, argv);
-    //glutMainLoop();
 }
 
 void Processor::createXML() {

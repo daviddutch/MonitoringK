@@ -9,28 +9,32 @@
 
 using namespace std;
 
+int MovingObject::next_id = 0;
+
 MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) :
     gen(generators),
     dir(d),
     height(0),
     movingIn(false),
     movingOut(false),
-    id(pId),
+    xnUserId(pId),
     nFrame(-1)
 {
-    printf("MovingObject(params)\n");
+    next_id++;
+    id = next_id;
+    printf("MovingObject(%d, %d)\n", id, xnUserId);
     gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
-    return movingObject.id == this->id;
+    return movingObject.xnUserId == this->xnUserId;
 }
 XnPoint3D MovingObject::getCom()
 {
     return com;
 }
-int MovingObject::getId()
+int MovingObject::getXnId()
 {
-    return id;
+    return xnUserId;
 }
 void MovingObject::outputImage(Rect rect) {
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
@@ -80,8 +84,10 @@ void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
     cvSetData(rgbimg,ucpImage, 640*3);
     cvCvtColor(rgbimg,rgbimg,CV_RGB2BGR);
 
-    cvSaveImage(file.str().c_str(),rgbimg);
-    //cv::imwrite(file,rgbimg);
+    //cvSaveImage(file.str().c_str(),rgbimg);
+    cv::imwrite(file.str(), rgbimg);
+
+    chmod(file.str().c_str(), 0777);
 
     cvReleaseImageHeader(&rgbimg);
     //delete[] ucpImage;
@@ -165,8 +171,8 @@ void MovingObject::update() {
         //outputImage(rect);
 
         frames.push_back(Frame(nFrame, rect, com));
-
-
+    }else{
+        xnUserId = -1;
     }
     //frames[nFrame].init(nFrame, rect, com);
     //printf("end update pers\n");
@@ -256,7 +262,7 @@ void MovingObject::computeComColor(){
             file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
             try
             {
-                outputImage(rect, file);
+                //qweoutputImage(rect, file);
             }
             catch( cv::Exception& e )
             {
@@ -337,10 +343,10 @@ void MovingObject::computeMetrics() {
         gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
         gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
         if(lcom.X > 0.1 && rcom.X > 0.1){
-            printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
-            printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
+            //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
+            //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
             float dist = getDistance(lcom, rcom);
-            printf("real world %d distance : %f\n", id, dist);
+            //printf("real world %d distance : %f\n", id, dist);
         }
         this->com.X = com2.X;
         this->com.Y = com2.Y;
@@ -420,16 +426,22 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
 
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
 
+    std::ostringstream file2d;
+    file2d << dir << "/2D/keyimage-" << id << ".png";
+
+    std::ostringstream file3d;
+    file3d << dir << "/3D/keyimage-" << id << ".png";
+
     checkDistance();
-    outputImagesKey();
+    outputImagesKey(file2d, file3d);
 
     printf("*** moving object xml %d***\n", id);
     QDomElement movingObjectNode = doc.createElement("movingObject");
     movingObjectNode.setAttribute("startFrameNo",startFrameNo);
     movingObjectNode.setAttribute("endFrameNo",endFrameNo);
     movingObjectNode.setAttribute("movingObjectType","");
-    movingObjectNode.setAttribute("keyImage2d",0);
-    movingObjectNode.setAttribute("keyImage3d",0);
+    movingObjectNode.setAttribute("keyImage2d", file2d.str().c_str());
+    movingObjectNode.setAttribute("keyImage3d",file3d.str().c_str());
     sequenceNode.appendChild(movingObjectNode);
 
     QDomElement eventsNode = doc.createElement("events");
@@ -444,7 +456,7 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     }
 }
 
-void MovingObject::outputImagesKey() {
+void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
     XnUInt32 no;
     gen.player.TellFrame(gen.depth.GetName(), no);
     printf("seek: %d\n", no);
@@ -453,12 +465,7 @@ void MovingObject::outputImagesKey() {
     printf("key: %d\n", key);
     gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
 
-    std::string filename("keyimage-");
-    std::string suffix(".png");
-    std::ostringstream file;
-
-    file << filename << id << "-" << suffix;
-    outputImage(frames[frames.size()/2].getZone(), file);
+    outputImage(frames[frames.size()/2].getZone(), file2d);
 
     //outputImage(frames[frames.size()/2].getZone());
     //outputDepth(rect);

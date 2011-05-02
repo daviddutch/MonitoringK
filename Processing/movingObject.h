@@ -20,13 +20,15 @@ public:
     float getHeight();
     float getHeightByFrame(int i);
     XnPoint3D getCom();
-    int getId();
+    int getXnId();
     void update();
     void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
     //MovingObject& operator=(const Date& rhs);  //assignement
 private:
-    XnUserID id;
+    static int next_id;
+    int id;
+    XnUserID xnUserId;
     float height;
     bool movingIn;
     bool movingOut;
@@ -47,7 +49,7 @@ private:
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeMetrics();
     void computeComColor();
-    void outputImagesKey();
+    void outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d);
 };
 
 #endif // MOVINGOBJECT_H
