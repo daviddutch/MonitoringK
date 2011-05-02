@@ -118,15 +118,16 @@ int Processor::start(int argc, char **argv) {
     instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
 
 
-    if (true){
+    if (false){
         while(nFrame != nFrameTot -1){
-            printf("start while\n");
+            //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
             // Read next available data
             instance->context.WaitAndUpdateAll();
-            printf("between\n");
-            if (instance->hasUserInSight) instance->sequence->update();
-            printf("end while\n");
+            //printf("between\n");
+            if (instance->hasUserInSight)
+                instance->sequence->update();
+            //printf("end while\n");
         }
         CleanupExit();
     }else{
@@ -246,17 +247,28 @@ void Processor::glutDisplay (void) {
 
         glDisable(GL_TEXTURE_2D);
 
-        // Read next available data
-        instance->context.WaitAndUpdateAll();
+        bool display = false;
 
+        if (!g_bPause)
+        {
+            if (g_bStep)
+            {
+                g_bStep = false;
+                g_bPause = true;
+            }
+            display = true;
+            // Read next available data
+            instance->context.WaitAndUpdateAll();
+        }
         // Process the data
         //DRAW
         instance->gen->depth.GetMetaData(depthMD);
         instance->gen->user.GetUserPixels(0, sceneMD);
         DrawDepthMap(depthMD, sceneMD, 0);
-
-        if (instance->hasUserInSight) instance->sequence->update();
-
+        if(display)
+            {
+            if (instance->hasUserInSight) instance->sequence->update();
+        }
         glutSwapBuffers();
 
 }
@@ -274,10 +286,22 @@ void Processor::glutIdle (void)
 
 void Processor::glutKeyboard (unsigned char key, int x, int y)
 {
+    printf("key : %d\n", key);
         switch (key)
         {
         case 27:
                 CleanupExit();
+                break;
+        case 'd':
+                if (g_bPause)
+                    playNextFrame();
+                break;
+        case 'a':
+                if (g_bPause)
+                    playPrevFrame();
+                break;
+        case 'p':
+                g_bPause = !g_bPause;
                 break;
         }
 }
@@ -299,4 +323,42 @@ void Processor::glInit (int * pargc, char ** argv)
 
         glEnableClientState(GL_VERTEX_ARRAY);
         glDisableClientState(GL_COLOR_ARRAY);
+}
+
+void Processor::playNextFrame(){
+    const XnChar* strNodeName = instance->gen->depth.GetName();
+
+    XnUInt32 nFrame = 0;
+    XnUInt32 nTotFrame = 0;
+    if (instance->gen->player.GetNumFrames(strNodeName, nTotFrame) != XN_STATUS_OK)
+        printf("ERROR nbFrames: %s\n", xnGetStatusString(0));
+    if (instance->gen->player.TellFrame(strNodeName, nFrame) != XN_STATUS_OK)
+        printf("ERROR nbFrames: %s\n", xnGetStatusString(0));
+
+    if (instance->gen->player.SeekToFrame(strNodeName, 1, XN_PLAYER_SEEK_CUR) != XN_STATUS_OK)
+             printf("ERROR seektoframe: %s\n", xnGetStatusString(0));
+
+    printf("Num Frame: %d / %d\n", nFrame, nTotFrame);
+    g_bStep = true;
+    g_bPause = false;
+    glutPostRedisplay();
+}
+
+void Processor::playPrevFrame(){
+    const XnChar* strNodeName = instance->gen->depth.GetName();
+
+    XnUInt32 nFrame = 0;
+    XnUInt32 nTotFrame = 0;
+    if (instance->gen->player.GetNumFrames(strNodeName, nTotFrame) != XN_STATUS_OK)
+        printf("ERROR nbFrames: %s\n", xnGetStatusString(0));
+    if (instance->gen->player.TellFrame(strNodeName, nFrame) != XN_STATUS_OK)
+        printf("ERROR nbFrames: %s\n", xnGetStatusString(0));
+
+    if (instance->gen->player.SeekToFrame(strNodeName, -1, XN_PLAYER_SEEK_CUR) != XN_STATUS_OK)
+             printf("ERROR seektoframe: %s\n", xnGetStatusString(0));
+
+    printf("Num Frame: %d / %d\n", nFrame, nTotFrame);
+    g_bStep = true;
+    g_bPause = false;
+    glutPostRedisplay();
 }

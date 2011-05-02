@@ -12,7 +12,7 @@ Sequence::Sequence(Generators& generators, std::string d) :
 }
 
 void Sequence::update() {
-    printf("update seq()\n");
+    //printf("update seq()\n");
     int nbUsers = gen.user.GetNumberOfUsers();
 
     if (nbUsers==0){
@@ -39,7 +39,7 @@ void Sequence::update() {
         }
         movingObjects.find(user)->second.update(); //tells the moving object that there is new data. he can update his self
     }
-    printf("end update seq\n");
+    //printf("end update seq\n");
 }
 
 void Sequence::toXML(QDomDocument& doc, QDomElement& movieNode) {
