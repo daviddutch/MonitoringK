@@ -118,9 +118,8 @@ int Processor::start(int argc, char **argv) {
     instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
 
 
-    if (false){
+    if (true){
         while(nFrame != nFrameTot -1){
-<<<<<<< HEAD
             //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
             // Read next available data
@@ -129,12 +128,6 @@ int Processor::start(int argc, char **argv) {
             if (instance->hasUserInSight)
                 instance->sequence->update();
             //printf("end while\n");
-=======
-            instance->gen->player.TellFrame(instance->strNodeName,nFrame);
-            // Read next available data
-            instance->context.WaitAndUpdateAll();
-            if (instance->hasUserInSight) instance->sequence->update();
->>>>>>> 93d77243c60fb25911d744ad871286d5c6b086c1
         }
         CleanupExit();
     }else{

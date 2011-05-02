@@ -112,10 +112,10 @@ void MovingObject::outputDepth(Rect rect, std::ostringstream& file) {
 
     //Get pointer on depthMap and prepare matrix to get the cut depth image
     const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
-    printf("cvCreateMat\n");
+    //printf("cvCreateMat\n");
     CvMat* depthMetersMat   = cvCreateMat(480, 640, CV_8UC1);
 
-    printf("fillup\n");
+    //printf("fillup\n");
     //Fillup the whole depth image
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
@@ -313,40 +313,87 @@ void MovingObject::computeMetrics() {
         int i = (int)com2.X;
         int j = (int)com2.Y;
 
-        //computes the with of the object on the center of gravity
-        XnPoint3D lcom;
-        XnPoint3D rcom;
-        int nbOther = 1;
 
-        for(int x=i;x<XN_VGA_X_RES;x--){
-            if (nbOther==0){
+        //computes the with of the object on the center of gravity
+        XnPoint3D lcom = com;
+        XnPoint3D rcom = com;
+
+        float lastZ = com.Z;
+        for(int x=i;x>0;x--){
+            float newZ = pDepthMap[j * XN_VGA_X_RES + x];
+            if(abs(lastZ-newZ)>50){
                 lcom.X = x;
                 lcom.Y = j;
                 lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
                 break;
             }
-            if (userPix[j * XN_VGA_X_RES + x ] != id) {
-                nbOther--;
-            }
+
         }
-        nbOther = 1;
+        lastZ = com.Z;
         for(int x=i;x<XN_VGA_X_RES;x++){
-            if (nbOther==0){
-                rcom.X = x;
-                rcom.Y = j;
-                rcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
+            float newZ = pDepthMap[j * XN_VGA_X_RES + x];
+            if(abs(lastZ-newZ)>50){
+                lcom.X = x;
+                lcom.Y = j;
+                lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
                 break;
             }
-            if (userPix[j * XN_VGA_X_RES + x ] != id) {
-                nbOther--;
-            }
         }
+
 
         Rect rect;
         rect.top       = rcom.Y-5;
         rect.right     = rcom.X;
         rect.bottom    = rcom.Y+5;
         rect.left      = lcom.X;
+        /*
+
+        XnPoint3D tcom;
+        XnPoint3D bcom;
+
+        float lastZ = com.Z;
+        int xCom = com.X;
+        for(int y=j;y>XN_VGA_Y_RES;y--)
+        {
+            float newZ = pDepthMap[j * XN_VGA_X_RES + xCom];
+            float delta = abs(lastZ - newZ);
+            if(delta > 100){
+                //printf("old:%f new:%f delta : %f \n", lastZ, newZ, delta);
+                break;
+            }
+
+            tcom.Y = j;
+            lastZ = newZ;
+        }
+
+        tcom.X = xCom;
+        tcom.Z = lastZ;
+
+        lastZ = com.Z;
+
+        for(int y=j;y<XN_VGA_Y_RES;y++)
+        {
+            float newZ = pDepthMap[j * XN_VGA_X_RES + xCom];
+            float delta = abs(lastZ - newZ);
+            if(delta > 100){
+                //printf("old:%f new:%f delta : %f \n", lastZ, newZ, delta);
+                break;
+            }
+
+            bcom.Y = j;
+            lastZ = newZ;
+        }
+
+        bcom.X = xCom;
+        bcom.Z = lastZ;
+
+
+        Rect rect;
+        rect.top       = (int)tcom.X;
+        rect.right     = com.X+5;
+        rect.bottom    = (int)bcom.X;
+        rect.left      = com.X-5;
+        */
 
         XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
         gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -358,17 +405,17 @@ void MovingObject::computeMetrics() {
         outputDepth(rect, file3d);
 
 
-        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
         gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
+        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
 
 
 
-        if(lcom.X > 0.1 && rcom.X > 0.1){
+        /*if(lcom.X > 0.1 && rcom.X > 0.1){
             //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
             //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
             float dist = getDistance(lcom, rcom);
             //printf("real world %d distance : %f\n", id, dist);
-        }
+        }*/
         this->com.X = com2.X;
         this->com.Y = com2.Y;
         this->com.Z = com2.Z;
