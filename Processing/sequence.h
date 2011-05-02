@@ -11,13 +11,14 @@
 class Sequence
 {
 public:
-    Sequence(Generators& gen);
+    Sequence(Generators& gen, std::string dir);
     void update();
     void toXML(QDomDocument& doc, QDomElement& movieNode);
 
 private:
     XnUInt32 startFrame;
     Generators& gen;
+    std::string dir;
     std::map<int, MovingObject> movingObjects;
     XnPoint3D getComByUser(int id);
     bool isTwoPointClose(XnPoint3D p1, XnPoint3D p2);

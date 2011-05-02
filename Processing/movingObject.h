@@ -16,7 +16,7 @@
 class MovingObject
 {
 public:
-    MovingObject(XnUserID pId, Generators& generators);
+    MovingObject(XnUserID pId, Generators& generators, std::string dir);
     float getHeight();
     float getHeightByFrame(int i);
     XnPoint3D getCom();
@@ -30,6 +30,7 @@ private:
     float height;
     bool movingIn;
     bool movingOut;
+    std::string dir;
     Generators& gen;
     XnPoint3D com; //Center of Mass
     XnUInt32 startFrameNo;
@@ -39,6 +40,7 @@ private:
     Metric metric;
     int nFrame;
     void outputImage(Rect rect);
+    void outputImage(Rect rect, std::ostringstream& file);
     void outputDepth(Rect rect);
     void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
     float checkDistance();

@@ -2,8 +2,9 @@
 #include "qdom.h"
 #include <math.h>
 
-Sequence::Sequence(Generators& generators) :
-    gen(generators)
+Sequence::Sequence(Generators& generators, std::string d) :
+    gen(generators),
+    dir(d)
 {
     printf("new Sequence\n");
     gen.player.TellFrame(gen.depth.GetName(), this->startFrame);
@@ -34,7 +35,7 @@ void Sequence::update() {
         }
         //if new user create object
         if(movingObjects.find(user) == movingObjects.end()){
-            movingObjects.insert(std::map<int, MovingObject>::value_type(user, MovingObject(user, gen)));
+            movingObjects.insert(std::map<int, MovingObject>::value_type(user, MovingObject(user, gen, dir)));
         }
         movingObjects.find(user)->second.update(); //tells the moving object that there is new data. he can update his self
     }

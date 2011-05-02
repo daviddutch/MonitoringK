@@ -1,6 +1,7 @@
 #include "processor.h"
 #include "defs.h"
 #include <QtCore/QCoreApplication>
+#include <QDir>
 #include <XnOpenNI.h>
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
@@ -36,6 +37,13 @@ Processor* Processor::getInstance() {
 int Processor::start(int argc, char **argv) {
     fileName = argv[1];
     dateStart = fileName.substr(0,fileName.find("."));
+
+    //create dire for media
+    std::string dir = fileName.substr(0,fileName.find_last_of("."));
+    mkdir((dir).c_str(), 0777);
+    mkdir((dir+"/2D").c_str(), 0777);
+    mkdir((dir+"/3D").c_str(), 0777);
+
 
     XnStatus rc = XN_STATUS_OK;
     xn::DepthGenerator g_DepthGenerator;
@@ -74,7 +82,7 @@ int Processor::start(int argc, char **argv) {
         printf("Getting and setting AlternativeViewPoint failed: %s\n", xnGetStatusString(res));
       }
     } else {
-        printf("AlternativeViewPoint not supported");
+        printf("AlternativeViewPoint not supported\n");
     }
 
     g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
@@ -107,8 +115,22 @@ int Processor::start(int argc, char **argv) {
 
 
 
-    glInit(&argc, argv);
-    glutMainLoop();
+    XnUInt32 nFrame, nFrameTot;
+    instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
+
+
+
+
+    while(nFrame != nFrameTot -1){
+        instance->gen->player.TellFrame(instance->strNodeName,nFrame);
+        // Read next available data
+        instance->context.WaitAndUpdateAll();
+
+        if (instance->hasUserInSight) instance->sequence->update();
+    }
+    CleanupExit();
+    //glInit(&argc, argv);
+    //glutMainLoop();
 }
 
 void Processor::createXML() {
@@ -153,7 +175,7 @@ void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID 
     printf("NewUser %d\n", user);
     if (!instance->hasUserInSight){
         instance->hasUserInSight = true;
-        instance->sequence = new Sequence((*(instance->gen)));
+        instance->sequence = new Sequence((*(instance->gen)), instance->fileName.substr(0,instance->fileName.find_last_of(".")));
     }
     instance->nUser++;
 }

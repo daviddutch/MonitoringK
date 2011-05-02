@@ -9,8 +9,9 @@
 
 using namespace std;
 
-MovingObject::MovingObject(XnUserID pId, Generators& generators) :
+MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) :
     gen(generators),
+    dir(d),
     height(0),
     movingIn(false),
     movingOut(false),
@@ -32,16 +33,22 @@ int MovingObject::getId()
     return id;
 }
 void MovingObject::outputImage(Rect rect) {
-    printf("outputImage()\n");
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
+    std::string filename("snapshot-");
+    std::string suffix("-rgb.png");
+    std::ostringstream file;
 
+    file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
+    outputImage(rect, file);
+}
+void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
+    //compute the inside rect to draw rectangle
     Rect rect2;
     rect2.top    = rect.top+2;
     rect2.right  = rect.right-2;
     rect2.bottom = rect.bottom-2;
     rect2.left   = rect.left+2;
-
 
     //Make a copy of the complete ImageMap
     const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
@@ -73,12 +80,8 @@ void MovingObject::outputImage(Rect rect) {
     cvSetData(rgbimg,ucpImage, 640*3);
     cvCvtColor(rgbimg,rgbimg,CV_RGB2BGR);
 
-    std::string filename("snapshot-");
-    std::ostringstream file;
-    std::string suffix("-rgb.png");
-
-    file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
-    cv::imwrite(file.str(),rgbimg);
+    cvSaveImage(file.str().c_str(),rgbimg);
+    //cv::imwrite(file,rgbimg);
 
     cvReleaseImageHeader(&rgbimg);
     //delete[] ucpImage;
@@ -197,7 +200,7 @@ void MovingObject::computeComColor(){
         int green = 0;
         int blue = 0;
         int nPixel = 0;
-        printf("x, y : (%d, %d)\n", i, j);
+        //printf("x, y : (%d, %d)\n", i, j);
         for (int x=i-zoneSize; x<i+zoneSize; x++){
             for (int y=j-zoneSize; y<j+zoneSize; y++){
                 red   += pImage[y * XN_VGA_X_RES + x ].nRed;
@@ -216,17 +219,17 @@ void MovingObject::computeComColor(){
 
         double dist = ColourDistance(comColor, average);
 
-        printf("color dist with special is : %f\n", dist);
+        //printf("color dist with special is : %f\n", dist);
 
         dist = sqrt(pow(comColor.nRed-average.nRed,2) + pow(comColor.nGreen-average.nGreen,2) + pow(comColor.nBlue-average.nBlue,2));
 
-        printf("color dist with normal is : %f\n", dist);
+        //printf("color dist with normal is : %f\n", dist);
 
         comColor.nRed  = average.nRed;
         comColor.nGreen = average.nGreen;
         comColor.nBlue  = average.nBlue;
 
-        printf("Com color : (%d, %d, %d)\n", average.nRed, average.nGreen, average.nBlue);
+        //printf("Com color : (%d, %d, %d)\n", average.nRed, average.nGreen, average.nBlue);
 
         /*
         Rect rect;
@@ -243,7 +246,23 @@ void MovingObject::computeComColor(){
             rect.right     = i+zoneSize;
             rect.bottom    = j+zoneSize;
             rect.left      = i-zoneSize;
-            outputImage(rect);
+            XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
+            gen.player.TellFrame(gen.depth.GetName(), nFrame);
+            std::string filename(dir+"/2D/com-");
+            //std::string filename("Captured/2D/com-");
+            std::string suffix("-rgb.png");
+            std::ostringstream file;
+
+            file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
+            try
+            {
+                outputImage(rect, file);
+            }
+            catch( cv::Exception& e )
+            {
+                std::cout << "Exception while writting file : " << e.err << std::endl;
+            }
+
         //}
 
         /*
@@ -426,13 +445,23 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
 }
 
 void MovingObject::outputImagesKey() {
-    int key = frames[frames.size()/2].getId();
-    printf("key: %d\n", key);
-    gen.player.SeekToFrame(gen.depth.GetName(),key, XN_PLAYER_SEEK_SET);
     XnUInt32 no;
     gen.player.TellFrame(gen.depth.GetName(), no);
     printf("seek: %d\n", no);
 
-    outputImage(frames[frames.size()/2].getZone());
+    int key = frames[frames.size()/2].getId();
+    printf("key: %d\n", key);
+    gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
+
+    std::string filename("keyimage-");
+    std::string suffix(".png");
+    std::ostringstream file;
+
+    file << filename << id << "-" << suffix;
+    outputImage(frames[frames.size()/2].getZone(), file);
+
+    //outputImage(frames[frames.size()/2].getZone());
     //outputDepth(rect);
+
+    gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
 }
