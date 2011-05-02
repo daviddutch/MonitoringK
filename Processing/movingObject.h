@@ -44,6 +44,7 @@ private:
     void outputImage(Rect rect);
     void outputImage(Rect rect, std::ostringstream& file);
     void outputDepth(Rect rect);
+    void outputDepth(Rect rect, std::ostringstream& file);
     void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
     float checkDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);

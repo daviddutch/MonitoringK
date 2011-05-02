@@ -94,8 +94,22 @@ void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
 }
 
 void MovingObject::outputDepth(Rect rect) {
+    XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
+    gen.player.TellFrame(gen.depth.GetName(), nFrame);
+
+    std::ostringstream file;
+    file << "snapshot-" << nFrame << "-" << id << "-" << movingIn << "-depth.png";
+
+    outputDepth(rect, file);
+}
+void MovingObject::outputDepth(Rect rect, std::ostringstream& file) {
     double alpha = 255.0/2048.0;
-    printf("outputDepth()\n");
+    Rect rect2;
+    rect2.top    = rect.top+2;
+    rect2.right  = rect.right-2;
+    rect2.bottom = rect.bottom-2;
+    rect2.left   = rect.left+2;
+
     //Get pointer on depthMap and prepare matrix to get the cut depth image
     const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
     printf("cvCreateMat\n");
@@ -105,10 +119,14 @@ void MovingObject::outputDepth(Rect rect) {
     //Fillup the whole depth image
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
-            if (y>rect.top && y<rect.bottom && x>rect.left && x<rect.right) { //is it inside the rectangle containing the person
-                depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = pDepthMap[y * XN_VGA_X_RES + x] * alpha;
+            if (y>=rect.top && y<=rect.bottom && x>=rect.left && x<=rect.right) { //is it inside the rectangle containing the person
+                if (y>=rect2.top && y<=rect2.bottom && x>=rect2.left && x<=rect2.right) {
+                    depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = pDepthMap[y * XN_VGA_X_RES + x] * alpha;
+                }else{
+                    depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = 255;
+                }
             } else {
-                depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] =  255;
+                depthMetersMat->data.ptr[y * XN_VGA_X_RES + x ] = pDepthMap[y * XN_VGA_X_RES + x] * alpha;
             }
         }
     }
@@ -118,11 +136,6 @@ void MovingObject::outputDepth(Rect rect) {
     kinectDepthImage = cvCreateImage( cvSize(640,480),8,1);
     cvGetImage(depthMetersMat, kinectDepthImage);
 
-    std::string filename("snapshot-");
-    std::ostringstream file;
-    std::string suffix("-depth.png");
-
-    file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
     cv::imwrite(file.str(),depthMetersMat);
 
     cvReleaseMat(&depthMetersMat);
@@ -193,7 +206,7 @@ void MovingObject::computeComColor(){
     gen.user.GetCoM(id, com);
     XnPoint3D com2;
     gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
-    int zoneSize = 10;
+    int zoneSize = 2;
 
     if (com.Z != 0) {
         int i = (int)com2.X;
@@ -254,15 +267,12 @@ void MovingObject::computeComColor(){
             rect.left      = i-zoneSize;
             XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
             gen.player.TellFrame(gen.depth.GetName(), nFrame);
-            std::string filename(dir+"/2D/com-");
-            //std::string filename("Captured/2D/com-");
-            std::string suffix("-rgb.png");
-            std::ostringstream file;
 
-            file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
+            std::ostringstream file;
+            file << dir << "/3D/com-" << nFrame << "-" << id << "-rgb.png";
             try
             {
-                //qweoutputImage(rect, file);
+                outputDepth(rect, file);
             }
             catch( cv::Exception& e )
             {
@@ -306,42 +316,53 @@ void MovingObject::computeMetrics() {
         //computes the with of the object on the center of gravity
         XnPoint3D lcom;
         XnPoint3D rcom;
-        int nbOther = 5;
-        bool found = false;
-        for (int y=j; y<XN_VGA_Y_RES; y++){
-            for(int x=i;x<XN_VGA_X_RES;x--){
-                if (nbOther==0){
-                    lcom.X = x;
-                    lcom.Y = y;
-                    lcom.Z = pDepthMap[y * XN_VGA_X_RES + x];
-                    found = true;
-                    break;
-                }
-                if (userPix[y * XN_VGA_X_RES + x ] != id) {
-                    nbOther--;
-                }
+        int nbOther = 1;
+
+        for(int x=i;x<XN_VGA_X_RES;x--){
+            if (nbOther==0){
+                lcom.X = x;
+                lcom.Y = j;
+                lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
+                break;
             }
-            if (found) break;
-        }
-        nbOther = 5;
-        found = false;
-        for (int y=j; y<XN_VGA_Y_RES; y++){
-            for(int x=i;x<XN_VGA_X_RES;x++){
-                if (nbOther==0){
-                    rcom.X = x;
-                    rcom.Y = y;
-                    rcom.Z = pDepthMap[y * XN_VGA_X_RES + x];
-                    found = true;
-                    break;
-                }
-                if (userPix[y * XN_VGA_X_RES + x ] != id) {
-                    nbOther--;
-                }
+            if (userPix[j * XN_VGA_X_RES + x ] != id) {
+                nbOther--;
             }
-            if (found) break;
         }
+        nbOther = 1;
+        for(int x=i;x<XN_VGA_X_RES;x++){
+            if (nbOther==0){
+                rcom.X = x;
+                rcom.Y = j;
+                rcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
+                break;
+            }
+            if (userPix[j * XN_VGA_X_RES + x ] != id) {
+                nbOther--;
+            }
+        }
+
+        Rect rect;
+        rect.top       = rcom.Y-5;
+        rect.right     = rcom.X;
+        rect.bottom    = rcom.Y+5;
+        rect.left      = lcom.X;
+
+        XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
+        gen.player.TellFrame(gen.depth.GetName(), nFrame);
+        std::ostringstream file2d;
+        file2d << dir << "/2D/metric-" << nFrame << ".png";
+        outputImage(rect, file2d);
+        std::ostringstream file3d;
+        file3d << dir << "/3D/metric-" << nFrame << ".png";
+        outputDepth(rect, file3d);
+
+
         gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
         gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
+
+
+
         if(lcom.X > 0.1 && rcom.X > 0.1){
             //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
             //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
