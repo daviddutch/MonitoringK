@@ -24,6 +24,12 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
 }
+MovingObject& MovingObject::operator=(const MovingObject& rhs) {
+    if (&rhs == this) return *this;
+
+    return *this;
+}
+
 XnPoint3D MovingObject::getCom() {
     return com;
 }

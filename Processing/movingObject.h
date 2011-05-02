@@ -28,7 +28,7 @@ public:
     void update();
     void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
-    //MovingObject& operator=(const Date& rhs);  //assignement
+    MovingObject& operator=(const MovingObject& rhs);  //assignement
 private:
     static int next_id;
     int id;

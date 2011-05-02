@@ -21,44 +21,56 @@ void Sequence::update() {
     }
 
     for (int user=1; user<=nbUsers;user++){
-        //Check user's COM
-        if(movingObjects.find(user) != movingObjects.end()){
-            XnPoint3D com;
-            gen.user.GetCoM(user, com);
-            if (com.Z!=0) {
-                Metric newMetric = computeMetrics(user, com);
-                Metric oldMetric = movingObjects.find(user)->second.getMetric();
-                float evolvHeight = abs(newMetric.height-oldMetric.height)/newMetric.height;
-                printf("Pourcentage evolv height %f\n", evolvHeight);
+        int indexUser=-1;
+        XnPoint3D com;
+        Metric newMetric;
+        gen.user.GetCoM(user, com);
+        if (com.Z!=0)
+            newMetric = computeMetrics(user, com);
+        //check if user exist
+        for(int i=0; i < movingObjects.size(); i++) {
+            if (movingObjects[i].getXnId()==user){
+                indexUser = i;
+                if (com.Z!=0) {
+                    Metric oldMetric = movingObjects[indexUser].getMetric();
+                    float evolvHeight = abs(newMetric.height-oldMetric.height)/newMetric.height;
+                    printf("Pourcentage evolv height %f\n", evolvHeight);
 
-                float evolvWidth = abs(newMetric.width-oldMetric.width)/newMetric.width;
-                printf("Pourcentage evolv width %f\n", evolvWidth);
+                    float evolvWidth = abs(newMetric.width-oldMetric.width)/newMetric.width;
+                    printf("Pourcentage evolv width %f\n", evolvWidth);
 
-                //if (evolvHeight>0.6 || evolvWidth>0.6){
-                if (evolvHeight>0.6){
-                    movingObjects.find(user)->second.setXnId(0);
-                    movingObjects.insert(std::map<int, MovingObject>::value_type(user, MovingObject(user, gen, dir)));
+                    //if (evolvHeight>0.6 || evolvWidth>0.6){
+                    if (evolvHeight>0.6){
+                        movingObjects[indexUser].setXnId(0);
+                        movingObjects.push_back(MovingObject(user, gen, dir));
+                        indexUser = movingObjects.size() - 1;
+                    }
+
+                    /*
+                    XnPoint3D comUser, comNew;
+                    comUser = movingObjects.at(user).getCom();
+                    comNew = getComByUser(movingObjects.at(user).getXnId());
+                    if(comNew.X<-0.1 || comNew.X >0.1){
+                        //printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
+                        //printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
+                        //if(isTwoPointClose(comUser, comNew))
+                        //    printf("the two points are close !\n");
+                    }
+                    */
                 }
-                movingObjects.find(user)->second.setMetric(newMetric);
-
-                /*
-                XnPoint3D comUser, comNew;
-                comUser = movingObjects.at(user).getCom();
-                comNew = getComByUser(movingObjects.at(user).getXnId());
-                if(comNew.X<-0.1 || comNew.X >0.1){
-                    //printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
-                    //printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
-                    //if(isTwoPointClose(comUser, comNew))
-                    //    printf("the two points are close !\n");
-                }
-                */
+                break;
             }
         }
+
         //if new user create object
-        if(movingObjects.find(user) == movingObjects.end()){
-            movingObjects.insert(std::map<int, MovingObject>::value_type(user, MovingObject(user, gen, dir)));
+        if(indexUser<0 && com.Z!=0){
+            movingObjects.push_back(MovingObject(user, gen, dir));
+            indexUser = movingObjects.size() - 1;
         }
-        movingObjects.find(user)->second.update(); //tells the moving object that there is new data. he can update his self
+        if (com.Z!=0){
+            movingObjects[indexUser].setMetric(newMetric);
+            movingObjects[indexUser].update(); //tells the moving object that there is new data. he can update his self
+        }
     }
     //printf("end update seq\n");
 }
@@ -71,10 +83,9 @@ void Sequence::toXML(QDomDocument& doc, QDomElement& movieNode) {
     sequenceNode.setAttribute("startFrameNo",startFrame);
     sequenceNode.setAttribute("endFrameNo",endFrameNo);
     movieNode.appendChild(sequenceNode);
-   for( std::map<int, MovingObject>::iterator ii=movingObjects.begin(); ii!=movingObjects.end(); ++ii) {
-       //cout << (*ii).first << ": " << (*ii).second << endl;
-       (*ii).second.toXML(doc, sequenceNode);
-   }
+    for(int i=0; i < movingObjects.size(); i++) {
+        movingObjects[i].toXML(doc, sequenceNode);
+    }
 
 }
 

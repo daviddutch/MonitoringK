@@ -20,7 +20,7 @@ private:
     XnUInt32 startFrame;
     Generators& gen;
     std::string dir;
-    std::map<int, MovingObject> movingObjects;
+    std::vector<MovingObject> movingObjects;
     XnPoint3D getComByUser(int id);
     bool isTwoPointClose(XnPoint3D p1, XnPoint3D p2);
     Metric computeMetrics(XnUserID userId, XnPoint3D com);
