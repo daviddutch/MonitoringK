@@ -17,10 +17,14 @@ class MovingObject
 {
 public:
     MovingObject(XnUserID pId, Generators& generators, std::string dir);
-    float getHeight();
-    float getHeightByFrame(int i);
+
+    XnUserID getXnId();
+    void setXnId(XnUserID xnUserId);
+
+    Metric getMetric();
+    void setMetric(Metric metric);
+
     XnPoint3D getCom();
-    int getXnId();
     void update();
     void toXML(QDomDocument& doc, QDomElement& sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
@@ -29,9 +33,6 @@ private:
     static int next_id;
     int id;
     XnUserID xnUserId;
-    float height;
-    bool movingIn;
-    bool movingOut;
     std::string dir;
     Generators& gen;
     XnPoint3D com; //Center of Mass
@@ -40,7 +41,7 @@ private:
     std::vector<Frame> frames;
     std::vector<Event> events;
     Metric metric;
-    int nFrame;
+
     void outputImage(Rect rect);
     void outputImage(Rect rect, std::ostringstream& file);
     void outputDepth(Rect rect);
@@ -48,7 +49,6 @@ private:
     void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
     float checkDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
-    void computeMetrics();
     void computeComColor();
     void outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d);
 };

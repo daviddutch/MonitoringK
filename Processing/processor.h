@@ -44,6 +44,12 @@ private:
     static void glutIdle (void);
     static void glutKeyboard (unsigned char key, int x, int y);
     void glInit (int * pargc, char ** argv);
-};
 
+    static void playNextFrame();
+    static void playPrevFrame();
+
+
+};
+static bool g_bStep;
+static bool g_bPause;
 #endif // PROCESSOR_H

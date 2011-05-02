@@ -31,9 +31,7 @@ struct Rect3D {
 };
 
 struct Metric {
-    float minHeight;
-    float maxHeight;
-    float minWidth;
-    float maxWidth;
+    float height;
+    float width;
 };
 #endif // DEFS_H

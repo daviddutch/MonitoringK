@@ -7,6 +7,7 @@
 #include <map>
 #include "movingObject.h"
 #include <qdom.h>
+#include "defs.h"
 
 class Sequence
 {
@@ -22,6 +23,7 @@ private:
     std::map<int, MovingObject> movingObjects;
     XnPoint3D getComByUser(int id);
     bool isTwoPointClose(XnPoint3D p1, XnPoint3D p2);
+    Metric computeMetrics(XnUserID userId, XnPoint3D com);
 };
 
 #endif // SEQUENCE_H
