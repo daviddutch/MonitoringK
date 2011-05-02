@@ -120,13 +120,10 @@ int Processor::start(int argc, char **argv) {
 
     if (true){
         while(nFrame != nFrameTot -1){
-            printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
             // Read next available data
             instance->context.WaitAndUpdateAll();
-            printf("between\n");
             if (instance->hasUserInSight) instance->sequence->update();
-            printf("end while\n");
         }
         CleanupExit();
     }else{
