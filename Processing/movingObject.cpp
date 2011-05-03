@@ -14,11 +14,7 @@ int MovingObject::next_id = 0;
 MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) :
     gen(generators),
     dir(d),
-    height(0),
-    movingIn(false),
-    movingOut(false),
-    xnUserId(pId),
-    nFrame(-1)
+    xnUserId(pId)
 {
     next_id++;
     id = next_id;
@@ -28,22 +24,34 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
 }
-XnPoint3D MovingObject::getCom()
-{
+MovingObject& MovingObject::operator=(const MovingObject& rhs) {
+    if (&rhs == this) return *this;
+
+    return *this;
+}
+
+XnPoint3D MovingObject::getCom() {
     return com;
 }
-int MovingObject::getXnId()
-{
+XnUserID MovingObject::getXnId() {
     return xnUserId;
+}
+void MovingObject::setXnId(XnUserID xnUserId) {
+    this->xnUserId = xnUserId;
+}
+Metric MovingObject::getMetric() {
+    return metric;
+}
+void MovingObject::setMetric(Metric metric) {
+    this->metric = metric;
 }
 void MovingObject::outputImage(Rect rect) {
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
-    std::string filename("snapshot-");
-    std::string suffix("-rgb.png");
-    std::ostringstream file;
 
-    file << filename << nFrame << "-" << id << "-" << movingIn << suffix;
+    std::ostringstream file;
+    file << "snapshot-" << nFrame << "-" << id << "-rgb.png";
+
     outputImage(rect, file);
 }
 void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
@@ -98,7 +106,7 @@ void MovingObject::outputDepth(Rect rect) {
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
 
     std::ostringstream file;
-    file << "snapshot-" << nFrame << "-" << id << "-" << movingIn << "-depth.png";
+    file << "snapshot-" << nFrame << "-" << id << "-depth.png";
 
     outputDepth(rect, file);
 }
@@ -142,7 +150,7 @@ void MovingObject::outputDepth(Rect rect, std::ostringstream& file) {
 }
 
 void MovingObject::update() {
-    //printf("update movingObject()\n");
+   // printf("update movingObject(%d)\n", id);
 
     XnUInt32 nFrame;
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -155,45 +163,36 @@ void MovingObject::update() {
     gen.user.GetUserPixels(id, sceneMetaData);
     unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
 
-    Rect rect;
-    rect.top    = XN_VGA_Y_RES+1;
-    rect.right  = -1;
-    rect.bottom = -1;
-    rect.left   = XN_VGA_X_RES+1;
+    gen.user.GetCoM(xnUserId, com);
 
+    if (com.Z != 0){ //TODO: is that correct, working ?????
+        Rect rect;
+        rect.top    = XN_VGA_Y_RES+1;
+        rect.right  = -1;
+        rect.bottom = -1;
+        rect.left   = XN_VGA_X_RES+1;
 
-    for (int y=0; y<XN_VGA_Y_RES; y++){
-        for(int x=0;x<XN_VGA_X_RES;x++){
-            if (userPix[y * XN_VGA_X_RES + x ] == id) {
-                if (y<rect.top) rect.top=y;
-                if (x>rect.right) rect.right=x;
-                if (y>rect.bottom) rect.bottom=y;
-                if (x<rect.left) rect.left=x;
+        for (int y=0; y<XN_VGA_Y_RES; y++){
+            for(int x=0;x<XN_VGA_X_RES;x++){
+                if (userPix[y * XN_VGA_X_RES + x ] == xnUserId) {
+                    if (y<rect.top) rect.top=y;
+                    if (x>rect.right) rect.right=x;
+                    if (y>rect.bottom) rect.bottom=y;
+                    if (x<rect.left) rect.left=x;
+                }
             }
         }
-    }
-
-    if(rect.bottom != -1)
-    {
-        computeMetrics();
+        //computeMetrics();
         computeComColor();
-        //printf("Rect %d: %d %d %d %d\n",id, rect.top, rect.left, rect.bottom , rect.right);
-
-        //printf("ouptut style\n");
-        //outputDepth(rect);
-        //outputImage(rect);
 
         frames.push_back(Frame(nFrame, rect, com));
     }else{
-        xnUserId = -1;
+        //xnUserId = 0;
     }
-    //frames[nFrame].init(nFrame, rect, com);
-    //printf("end update pers\n");
 }
 
 //Source : http://www.compuphase.com/cmetric.htm
-double ColourDistance(XnRGB24Pixel c1, XnRGB24Pixel c2)
-{
+double ColourDistance(XnRGB24Pixel c1, XnRGB24Pixel c2) {
   long rmean = ( (long)c1.nRed + (long)c2.nRed ) / 2;
   long r = (long)c1.nRed - (long)c2.nRed;
   long g = (long)c1.nGreen - (long)c2.nGreen;
@@ -203,7 +202,7 @@ double ColourDistance(XnRGB24Pixel c1, XnRGB24Pixel c2)
 //TODO: checkout on x and y out of the frame (segmentation fault)
 void MovingObject::computeComColor(){
     XnPoint3D com;
-    gen.user.GetCoM(id, com);
+    gen.user.GetCoM(xnUserId, com);
     XnPoint3D com2;
     gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
     int zoneSize = 2;
@@ -297,148 +296,7 @@ void MovingObject::computeComColor(){
     }
 }
 
-void MovingObject::computeMetrics() {
-    xn::SceneMetaData sceneMetaData;
-    gen.user.GetUserPixels(id, sceneMetaData);
-    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
-
-    XnPoint3D com;
-    gen.user.GetCoM(id, com);
-    XnPoint3D com2;
-    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
-    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
-    if (com.Z != 0) {
-        //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
-        //printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
-        int i = (int)com2.X;
-        int j = (int)com2.Y;
-
-
-        //computes the with of the object on the center of gravity
-        XnPoint3D lcom = com;
-        XnPoint3D rcom = com;
-
-        float lastZ = com.Z;
-        for(int x=i;x>0;x--){
-            float newZ = pDepthMap[j * XN_VGA_X_RES + x];
-            if(abs(lastZ-newZ)>50){
-                lcom.X = x;
-                lcom.Y = j;
-                lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
-                break;
-            }
-
-        }
-        lastZ = com.Z;
-        for(int x=i;x<XN_VGA_X_RES;x++){
-            float newZ = pDepthMap[j * XN_VGA_X_RES + x];
-            if(abs(lastZ-newZ)>50){
-                lcom.X = x;
-                lcom.Y = j;
-                lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
-                break;
-            }
-        }
-
-
-        Rect rect;
-        rect.top       = rcom.Y-5;
-        rect.right     = rcom.X;
-        rect.bottom    = rcom.Y+5;
-        rect.left      = lcom.X;
-        /*
-
-        XnPoint3D tcom;
-        XnPoint3D bcom;
-
-        float lastZ = com.Z;
-        int xCom = com.X;
-        for(int y=j;y>XN_VGA_Y_RES;y--)
-        {
-            float newZ = pDepthMap[j * XN_VGA_X_RES + xCom];
-            float delta = abs(lastZ - newZ);
-            if(delta > 100){
-                //printf("old:%f new:%f delta : %f \n", lastZ, newZ, delta);
-                break;
-            }
-
-            tcom.Y = j;
-            lastZ = newZ;
-        }
-
-        tcom.X = xCom;
-        tcom.Z = lastZ;
-
-        lastZ = com.Z;
-
-        for(int y=j;y<XN_VGA_Y_RES;y++)
-        {
-            float newZ = pDepthMap[j * XN_VGA_X_RES + xCom];
-            float delta = abs(lastZ - newZ);
-            if(delta > 100){
-                //printf("old:%f new:%f delta : %f \n", lastZ, newZ, delta);
-                break;
-            }
-
-            bcom.Y = j;
-            lastZ = newZ;
-        }
-
-        bcom.X = xCom;
-        bcom.Z = lastZ;
-
-
-        Rect rect;
-        rect.top       = (int)tcom.X;
-        rect.right     = com.X+5;
-        rect.bottom    = (int)bcom.X;
-        rect.left      = com.X-5;
-        */
-
-        XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
-        gen.player.TellFrame(gen.depth.GetName(), nFrame);
-        std::ostringstream file2d;
-        file2d << dir << "/2D/metric-" << nFrame << ".png";
-        outputImage(rect, file2d);
-        std::ostringstream file3d;
-        file3d << dir << "/3D/metric-" << nFrame << ".png";
-        outputDepth(rect, file3d);
-
-
-        gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
-        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
-
-
-
-        /*if(lcom.X > 0.1 && rcom.X > 0.1){
-            //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
-            //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
-            float dist = getDistance(lcom, rcom);
-            //printf("real world %d distance : %f\n", id, dist);
-        }*/
-        this->com.X = com2.X;
-        this->com.Y = com2.Y;
-        this->com.Z = com2.Z;
-
-    }
-}
-
-float MovingObject::getHeight() {
-
-    return height;
-}
-
-float MovingObject::getHeightByFrame(int i)
-{
-    //get top/bottom point object
-
-    Rect r = frames[i].getZone();
-    printf("rect top:%f bottom:%f height:%f\n", r.top, r.bottom, r.top-r.bottom);
-    return 0.0;
-}
-
-void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode)
-{
+void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode) {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
     float lastZ = 0;
     int startFrameCurrentMovement = frames[0].getId();
@@ -534,9 +392,7 @@ void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstrea
     gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
 
     outputImage(frames[frames.size()/2].getZone(), file2d);
-
-    //outputImage(frames[frames.size()/2].getZone());
-    //outputDepth(rect);
+    outputDepth(frames[frames.size()/2].getZone(), file3d);
 
     gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
 }

@@ -118,7 +118,7 @@ int Processor::start(int argc, char **argv) {
     instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
 
 
-    if (true){
+    if (false){
         while(nFrame != nFrameTot -1){
             //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
