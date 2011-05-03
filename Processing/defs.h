@@ -33,5 +33,6 @@ struct Rect3D {
 struct Metric {
     float height;
     float width;
+    float totDistance;
 };
 #endif // DEFS_H

@@ -18,8 +18,14 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
 {
     next_id++;
     id = next_id;
-    printf("MovingObject(%d, %d)\n", id, xnUserId);
+    //printf("MovingObject(%d, %d)\n", id, xnUserId);
+    std::ostringstream file1, file2;
+    file1 << dir << "/2D/keyimage-" << id << ".png";
+    file2 << dir << "/3D/keyimage-" << id << ".png";
+    file2d = file1.str();
+    file3d = file2.str();
     gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
+    stableHeight = 20;
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
@@ -42,9 +48,6 @@ void MovingObject::setXnId(XnUserID xnUserId) {
 Metric MovingObject::getMetric() {
     return metric;
 }
-void MovingObject::setMetric(Metric metric) {
-    this->metric = metric;
-}
 void MovingObject::outputImage(Rect rect) {
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -52,9 +55,9 @@ void MovingObject::outputImage(Rect rect) {
     std::ostringstream file;
     file << "snapshot-" << nFrame << "-" << id << "-rgb.png";
 
-    outputImage(rect, file);
+    outputImage(rect, file.str());
 }
-void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
+void MovingObject::outputImage(Rect rect, std::string file) {
     //compute the inside rect to draw rectangle
     Rect rect2;
     rect2.top    = rect.top+2;
@@ -93,9 +96,9 @@ void MovingObject::outputImage(Rect rect, std::ostringstream& file) {
     cvCvtColor(rgbimg,rgbimg,CV_RGB2BGR);
 
     //cvSaveImage(file.str().c_str(),rgbimg);
-    cv::imwrite(file.str(), rgbimg);
+    cv::imwrite(file, rgbimg);
 
-    chmod(file.str().c_str(), 0777);
+    chmod(file.c_str(), 0777);
 
     cvReleaseImageHeader(&rgbimg);
     //delete[] ucpImage;
@@ -108,9 +111,9 @@ void MovingObject::outputDepth(Rect rect) {
     std::ostringstream file;
     file << "snapshot-" << nFrame << "-" << id << "-depth.png";
 
-    outputDepth(rect, file);
+    outputDepth(rect, file.str());
 }
-void MovingObject::outputDepth(Rect rect, std::ostringstream& file) {
+void MovingObject::outputDepth(Rect rect, std::string file) {
     double alpha = 255.0/2048.0;
     Rect rect2;
     rect2.top    = rect.top+2;
@@ -144,12 +147,12 @@ void MovingObject::outputDepth(Rect rect, std::ostringstream& file) {
     kinectDepthImage = cvCreateImage( cvSize(640,480),8,1);
     cvGetImage(depthMetersMat, kinectDepthImage);
 
-    cv::imwrite(file.str(),depthMetersMat);
+    cv::imwrite(file,depthMetersMat);
 
     cvReleaseMat(&depthMetersMat);
 }
 
-void MovingObject::update() {
+void MovingObject::update(Metric newMetric) {
    // printf("update movingObject(%d)\n", id);
 
     XnUInt32 nFrame;
@@ -182,13 +185,25 @@ void MovingObject::update() {
                 }
             }
         }
-        //computeMetrics();
         computeComColor();
 
         frames.push_back(Frame(nFrame, rect, com));
+
+        float evolvHeight = abs(metric.height-this->metric.height)/metric.height;
+        if (evolvHeight<0.1 && stableHeight>0){
+            stableHeight--;
+            if (stableHeight==0)
+                outputKeyImages();
+        }else if (stableHeight>0){
+            stableHeight=20;
+        }
+        metric = newMetric;
     }else{
         //xnUserId = 0;
+        printf("should not happen !!!!\n");
     }
+    if (nFrame==startFrameNo)
+        outputKeyImages();
 }
 
 //Source : http://www.compuphase.com/cmetric.htm
@@ -271,7 +286,7 @@ void MovingObject::computeComColor(){
             file << dir << "/3D/com-" << nFrame << "-" << id << "-rgb.png";
             try
             {
-                outputDepth(rect, file);
+                //outputDepth(rect, file.str());
             }
             catch( cv::Exception& e )
             {
@@ -315,7 +330,6 @@ void MovingObject::checkMovement() {
             }
 
             if( (currentMovement != move && currentMovement !=-1) || i==(frames.size()-1) ){
-
                 events.push_back(Event(startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str()));
                 startFrameCurrentMovement = frames[i].getId();
             }
@@ -325,7 +339,7 @@ void MovingObject::checkMovement() {
     }
 }
 
-float MovingObject::checkDistance() {
+void MovingObject::computeDistance() {
     float distance = 0.0;
     XnPoint3D current;
     XnPoint3D last = frames[0].getCom();
@@ -334,9 +348,8 @@ float MovingObject::checkDistance() {
         distance += getDistance(last, current);
         last = current;
     }
-    printf("distance tot %d: %f\n", id, distance);
 
-    return distance;
+    metric.totDistance = distance;
 }
 
 float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
@@ -345,19 +358,10 @@ float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
 
 void MovingObject::toXML(TiXmlElement* sequenceNode) {
     XnUInt32 endFrameNo;
-
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
 
-    std::ostringstream file2d;
-    file2d << dir << "/2D/keyimage-" << id << ".png";
-
-    std::ostringstream file3d;
-    file3d << dir << "/3D/keyimage-" << id << ".png";
-
-    checkDistance();
+    computeDistance();
     checkMovement();
-
-    outputImagesKey(file2d, file3d);
 
     printf("*** moving object xml %d***\n", id);
 
@@ -365,9 +369,16 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     movingObjectNode->SetAttribute("startFrameNo", startFrameNo);
     movingObjectNode->SetAttribute("endFrameNo", endFrameNo);
     movingObjectNode->SetAttribute("movingObjectType", "");
-    movingObjectNode->SetAttribute("keyImage2d", file2d.str().c_str());
-    movingObjectNode->SetAttribute("keyImage3d", file3d.str().c_str());
+    movingObjectNode->SetAttribute("keyImage2d", file2d.c_str());
+    movingObjectNode->SetAttribute("keyImage3d", file3d.c_str());
     sequenceNode->LinkEndChild(movingObjectNode);
+
+    //output metric
+    TiXmlElement * metricNode = new TiXmlElement("metric");
+    metricNode->SetAttribute("height", metric.height);
+    metricNode->SetAttribute("width", metric.width);
+    metricNode->SetAttribute("totDistance", metric.totDistance);
+    movingObjectNode->LinkEndChild(metricNode);
 
     //output events
     TiXmlElement * eventsNode = new TiXmlElement("events");
@@ -383,18 +394,9 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     }
     movingObjectNode->LinkEndChild(framesNode);
 }
-
-void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
-    XnUInt32 no;
-    gen.player.TellFrame(gen.depth.GetName(), no);
-    printf("seek: %d\n", no);
-
-    int key = frames[frames.size()/2].getId();
-    printf("key: %d\n", key);
-    gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
-
-    outputImage(frames[frames.size()/2].getZone(), file2d);
-    outputDepth(frames[frames.size()/2].getZone(), file3d);
-
-    gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
+void MovingObject::outputKeyImages() {
+    XnUInt32 nFrame;
+    gen.player.TellFrame(gen.depth.GetName(), nFrame);
+    outputImage(frames[nFrame-startFrameNo].getZone(), file2d);
+    outputDepth(frames[nFrame-startFrameNo].getZone(), file3d);
 }

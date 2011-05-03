@@ -273,7 +273,6 @@ void Processor::glutIdle (void)
 
 void Processor::glutKeyboard (unsigned char key, int x, int y)
 {
-    printf("key : %d\n", key);
         switch (key)
         {
         case 27:
