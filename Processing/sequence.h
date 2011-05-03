@@ -15,14 +15,14 @@ public:
     Sequence(Generators& gen, std::string dir);
     void update();
     void toXML(TiXmlElement* movieNode);
-
 private:
     XnUInt32 startFrame;
     Generators& gen;
     std::string dir;
     std::vector<MovingObject> movingObjects;
     XnPoint3D getComByUser(int id);
-    bool isTwoPointClose(XnPoint3D p1, XnPoint3D p2);
+    bool isSameObject(int index, XnPoint3D com, Metric metric);
+    float getDistance(XnPoint3D p1, XnPoint3D p2);
     Metric computeMetrics(XnUserID userId, XnPoint3D com);
 };
 

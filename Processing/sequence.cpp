@@ -25,52 +25,29 @@ void Sequence::update() {
         XnPoint3D com;
         Metric newMetric;
         gen.user.GetCoM(user, com);
-        if (com.Z!=0)
+        if (com.Z!=0){
             newMetric = computeMetrics(user, com);
-        //check if user exist
-        for(int i=0; i < movingObjects.size(); i++) {
-            if (movingObjects[i].getXnId()==user){
-                indexUser = i;
-                if (com.Z!=0) {
-                    Metric oldMetric = movingObjects[indexUser].getMetric();
-                    float evolvHeight = abs(newMetric.height-oldMetric.height)/newMetric.height;
-                    printf("Pourcentage evolv height %f\n", evolvHeight);
+            //check if user exist
+            for(int i=0; i < movingObjects.size(); i++) {
+                if (movingObjects[i].getXnId()==user){
+                    indexUser = i;
 
-                    float evolvWidth = abs(newMetric.width-oldMetric.width)/newMetric.width;
-                    printf("Pourcentage evolv width %f\n", evolvWidth);
-
-                    //if (evolvHeight>0.6 || evolvWidth>0.6){
-                    if (evolvHeight>0.6){
+                    if (!isSameObject(indexUser, com, newMetric)){
                         movingObjects[indexUser].setXnId(0);
                         movingObjects.push_back(MovingObject(user, gen, dir));
                         indexUser = movingObjects.size() - 1;
                     }
-
-                    /*
-                    XnPoint3D comUser, comNew;
-                    comUser = movingObjects.at(user).getCom();
-                    comNew = getComByUser(movingObjects.at(user).getXnId());
-                    if(comNew.X<-0.1 || comNew.X >0.1){
-                        //printf("user COM : (%f;%f;%f)\n", comUser.X, comUser.Y, comUser.Z);
-                        //printf("new  COM : (%f;%f;%f)\n", comNew.X, comNew.Y, comNew.Z);
-                        //if(isTwoPointClose(comUser, comNew))
-                        //    printf("the two points are close !\n");
-                    }
-                    */
+                    break;
                 }
-                break;
             }
+            //if new user create object
+            if(indexUser<0){
+                movingObjects.push_back(MovingObject(user, gen, dir));
+                indexUser = movingObjects.size() - 1;
+            }
+            movingObjects[indexUser].update(newMetric); //tells the moving object that there is new data. he can update his self
         }
 
-        //if new user create object
-        if(indexUser<0 && com.Z!=0){
-            movingObjects.push_back(MovingObject(user, gen, dir));
-            indexUser = movingObjects.size() - 1;
-        }
-        if (com.Z!=0){
-            movingObjects[indexUser].setMetric(newMetric);
-            movingObjects[indexUser].update(); //tells the moving object that there is new data. he can update his self
-        }
     }
     //printf("end update seq\n");
 }
@@ -87,22 +64,25 @@ void Sequence::toXML(TiXmlElement* movieNode) {
         movingObjects[i].toXML(sequenceNode);
     }
 }
+bool Sequence::isSameObject(int indexUser, XnPoint3D com, Metric metric){
+    Metric oldMetric = movingObjects[indexUser].getMetric();
+    float evolvHeight = abs(metric.height-oldMetric.height)/metric.height;
+    printf("Object :\n\tPourcentage evolv height %f\n", evolvHeight);
 
-XnPoint3D Sequence::getComByUser(int id)
-{
-    XnPoint3D com, com2;
-    gen.user.GetCoM(id, com);
-    //XnPoint3D com2;
-    //gen.depth.ConvertProjectiveToRealWorld(1, &com, &com2);
+    float evolvWidth = abs(metric.width-oldMetric.width)/metric.width;
+    printf("\tPourcentage evolv width %f\n", evolvWidth);
 
-    return com;
+    float dist = getDistance(com, movingObjects[indexUser].getCom());
+    printf("\tDist between com %f\n", dist);
+
+    //if (evolvHeight>0.6 || evolvWidth>0.6){
+    if (evolvHeight>0.6){
+        return false;
+    }
+    return true;
 }
-
-bool Sequence::isTwoPointClose(XnPoint3D p1, XnPoint3D p2)
-{
-    //sqrt[(Xa-Xb)²+(Ya-Yb)²+(Za-Zb)²]
-    float dist = sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
-    return (dist < 500);
+float Sequence::getDistance(XnPoint3D p1, XnPoint3D p2){
+    return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
 }
 Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
     Metric metric;

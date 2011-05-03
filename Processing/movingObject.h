@@ -22,13 +22,13 @@ public:
     void setXnId(XnUserID xnUserId);
 
     Metric getMetric();
-    void setMetric(Metric metric);
 
     XnPoint3D getCom();
-    void update();
+    void update(Metric metric);
     void toXML(TiXmlElement* sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
     MovingObject& operator=(const MovingObject& rhs);  //assignement
+    void outputKeyImages();
 private:
     static int next_id;
     int id;
@@ -41,16 +41,19 @@ private:
     std::vector<Frame> frames;
     std::vector<Event> events;
     Metric metric;
+    std::string file2d;
+    std::string file3d;
+    int stableHeight;
 
     void outputImage(Rect rect);
-    void outputImage(Rect rect, std::ostringstream& file);
+    void outputImage(Rect rect, std::string file);
     void outputDepth(Rect rect);
-    void outputDepth(Rect rect, std::ostringstream& file);
+    void outputDepth(Rect rect, std::string file);
     void checkMovement();
-    float checkDistance();
+    void computeDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeComColor();
-    void outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d);
+
 };
 
 #endif // MOVINGOBJECT_H
