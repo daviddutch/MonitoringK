@@ -15,6 +15,8 @@
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
+#include <vlc/plugins/vlc_fourcc.h>
+
 
 using namespace cv;
 using namespace std;
@@ -84,6 +86,12 @@ int main(int argc, char *argv[])
     int frameH  = 480; // 480 for firewire cameras
     writer=cvCreateVideoWriter("out.avi",CV_FOURCC('P','I','M','1'),
                                     fps,cvSize(frameW,frameH),isColor);
+
+    //CV_FOURCC('P','I','M','1')
+    //CV_FOURCC('D','I','V','3')
+    //CV_FOURCC('D','I','V','X')
+    //CV_FOURCC('M', 'P', '4', '2')
+    //VLC_FOURCC('V','P','8','0')
 
     while (TRUE)
     {

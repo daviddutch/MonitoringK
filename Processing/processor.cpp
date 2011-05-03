@@ -18,6 +18,7 @@
 #include <QTextStream>
 #include <qdom.h>
 #include <string>
+#include <stdlib.h>
 
 #include "tinyxml.h"
 
@@ -38,6 +39,9 @@ Processor* Processor::getInstance() {
 
 int Processor::start(int argc, char **argv) {
     fileName = argv[1];
+    int pos = fileName.find_last_of("/") +1;
+    if (pos < 0 ) pos = 0;
+    fileName = fileName.substr(pos);
     dateStart = fileName.substr(0,fileName.find("."));
 
     //create dire for media
@@ -55,7 +59,7 @@ int Processor::start(int argc, char **argv) {
     rc = context.Init();
     CHECK_RC(rc, "Init");
 
-    rc = context.OpenFileRecording(fileName.c_str());
+    rc = context.OpenFileRecording(argv[1]);
     CHECK_RC(rc, "InitFromONI");
 
     rc = context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
@@ -120,7 +124,7 @@ int Processor::start(int argc, char **argv) {
     instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
 
 
-    if (false){
+    if (true){
         while(nFrame != nFrameTot -1){
             //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
@@ -157,8 +161,15 @@ void Processor::createXML() {
 void Processor::writeXML() {
     //Write XML file
     char xmlFileName [50];
+    char buffer[50];
     sprintf (xmlFileName, "%s.xml", dateStart.c_str());
-    doc.SaveFile(xmlFileName);
+    getcwd(buffer, 100);
+
+    std::ostringstream file;
+    file << buffer << "/" << dateStart.c_str() << ".xml";
+
+    printf("current path: %s\n",file.str().c_str());
+    doc.SaveFile(file.str().c_str());
 }
 
 void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
