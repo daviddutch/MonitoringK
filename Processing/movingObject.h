@@ -9,7 +9,7 @@
 #include "generators.h"
 #include "frame.h"
 #include "event.h"
-#include "qdom.h"
+#include "tinyxml.h"
 #include <iostream>
 #include <string>
 
@@ -26,7 +26,7 @@ public:
 
     XnPoint3D getCom();
     void update();
-    void toXML(QDomDocument& doc, QDomElement& sequenceNode);
+    void toXML(TiXmlElement* sequenceNode);
     bool operator==(const MovingObject &movingObject) const; //equal
     MovingObject& operator=(const MovingObject& rhs);  //assignement
 private:
@@ -46,7 +46,7 @@ private:
     void outputImage(Rect rect, std::ostringstream& file);
     void outputDepth(Rect rect);
     void outputDepth(Rect rect, std::ostringstream& file);
-    void checkMovement(QDomDocument& doc, QDomElement& sequenceNode);
+    void checkMovement();
     float checkDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeComColor();

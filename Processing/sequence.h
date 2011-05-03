@@ -14,7 +14,7 @@ class Sequence
 public:
     Sequence(Generators& gen, std::string dir);
     void update();
-    void toXML(QDomDocument& doc, QDomElement& movieNode);
+    void toXML(TiXmlElement* movieNode);
 
 private:
     XnUInt32 startFrame;

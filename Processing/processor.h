@@ -9,9 +9,9 @@
 #include "defs.h"
 #include "generators.h"
 #include "sequence.h"
-#include "qdom.h"
 #include <iostream>
 #include <string>
+#include "tinyxml.h"
 
 class Processor
 {
@@ -29,8 +29,8 @@ private:
     int nUser;
     bool hasUserInSight;
     Sequence* sequence;
-    QDomDocument doc;
-    QDomElement movieNode;
+    TiXmlDocument doc;
+    TiXmlElement* movieNode;
     std::string dateStart;
     std::string fileName;
     const XnChar* strNodeName;

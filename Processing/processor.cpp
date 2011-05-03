@@ -19,6 +19,8 @@
 #include <qdom.h>
 #include <string>
 
+#include "tinyxml.h"
+
 
 Processor *Processor::instance = NULL;
 
@@ -140,38 +142,23 @@ void Processor::createXML() {
     XnUInt32 nFrameTot;
     gen->player.GetNumFrames(strNodeName,nFrameTot);
 
-    //Create XML
-    QDomImplementation impl = QDomDocument().implementation();
-    // document with document type
-    QString name = "kinectMovie";
-    QString publicId = "-//XADECK//DTD Movie 1.0 //EN";
-    QString systemId = "movie.xsd";
-    doc = QDomDocument(impl.createDocumentType(name,publicId,systemId));
+    TiXmlDeclaration * decl = new TiXmlDeclaration("1.0", "", "");
+    doc.LinkEndChild( decl );
 
-    // root node
-    movieNode = doc.createElement("kinectMovie");
-    movieNode.setAttribute("filenameONI",fileName.c_str());
-    movieNode.setAttribute("totNumberFrames",nFrameTot);
-    movieNode.setAttribute("framesPerSeconde",0);
-    movieNode.setAttribute("startDateTime",dateStart.c_str());
-    movieNode.setAttribute("endDateTime",0);
-    doc.appendChild(movieNode);
-
-    //XnUInt64 tmp;
-    //g_Player.TellTimestamp(tmp);
-    //printf("info player: %s TellTimestamp:%d \n", g_Player.GetInfo().GetDescription().Type, tmp);
+    movieNode = new TiXmlElement("kinectMovie");
+    movieNode->SetAttribute("filenameONI", fileName.c_str());
+    movieNode->SetAttribute("totNumberFrames", nFrameTot);
+    movieNode->SetAttribute("framesPerSeconde", 0);
+    movieNode->SetAttribute("startDateTime", dateStart.c_str());
+    movieNode->SetAttribute("endDateTime", 0);
+    doc.LinkEndChild(movieNode);
 }
 
 void Processor::writeXML() {
     //Write XML file
     char xmlFileName [50];
     sprintf (xmlFileName, "%s.xml", dateStart.c_str());
-    QFile file(xmlFileName);
-    if( !file.open(QFile::WriteOnly) )
-      return ;
-    QTextStream ts( &file );
-    ts << doc.toString();
-    file.close();
+    doc.SaveFile(xmlFileName);
 }
 
 void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
@@ -186,14 +173,14 @@ void XN_CALLBACK_TYPE Processor::LostUser(xn::UserGenerator& generator, XnUserID
         printf("Lost user %d\n", user);
         instance->nUser--;
         if (instance->nUser==0) {
-            instance->sequence->toXML(instance->doc, instance->movieNode);
+            instance->sequence->toXML(instance->movieNode);
             instance->hasUserInSight = false;
         }
 }
 
 void Processor::CleanupExit() {
     if(instance->hasUserInSight)
-        instance->sequence->toXML(instance->doc, instance->movieNode);
+        instance->sequence->toXML(instance->movieNode);
 
     instance->writeXML();
 

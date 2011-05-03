@@ -4,13 +4,13 @@
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
 #include "defs.h"
-#include "qdom.h"
+#include "tinyxml.h"
 
 class Frame
 {
 public:
     Frame(int frame, Rect zone, XnPoint3D com);
-    void toXML(QDomDocument& doc, QDomElement& framesNode);
+    void toXML(TiXmlElement* framesNode);
     XnPoint3D getCom();
     Rect getZone();
     int getId();

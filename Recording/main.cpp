@@ -71,7 +71,7 @@ void StartCapture()
     timeinfo = localtime(&rawtime);
     XnUInt32 size;
     xnOSStrFormat(recordFile, sizeof(recordFile)-1, &size,
-             "%s%d-%02d-%02dT%02d:%02d:%02d.oni",
+             "%s%d-%02d-%02dT%02d_%02d_%02d.oni",
             destination.c_str(), timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 
     if (g_pRecorder != NULL)
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
             //Split the string to hour and minute var
             list = QString(argv[3]).split(":");
             if (list.count()>2){
-                printf("error to parse time \n");
+                printf("error while parsing time \n");
                 return 0;
             }
             hour =  atoi(list.takeFirst().toStdString().c_str());
