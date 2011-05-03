@@ -2,14 +2,16 @@
 #define EVENT_H
 
 #include <string>
+#include "tinyxml.h"
 
 class Event
 {
 public:
-    Event();
-    void init(std::string &type);
-    void toXML();
+    Event(int startFrameNo, int endFrameNo, std::string type);
+    void toXML(TiXmlElement* eventsNode);
 private:
+    int startFrameNo;
+    int endFrameNo;
     std::string type;
 };
 

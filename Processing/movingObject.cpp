@@ -5,7 +5,7 @@
 #include <cxcore.h>
 #include <cvaux.h>
 #include <highgui.h>
-#include "qdom.h"
+#include "tinyxml.h"
 
 using namespace std;
 
@@ -296,7 +296,7 @@ void MovingObject::computeComColor(){
     }
 }
 
-void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode) {
+void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
     float lastZ = 0;
     int startFrameCurrentMovement = frames[0].getId();
@@ -315,12 +315,8 @@ void MovingObject::checkMovement(QDomDocument& doc, QDomElement& eventsNode) {
             }
 
             if( (currentMovement != move && currentMovement !=-1) || i==(frames.size()-1) ){
-                QDomElement eventNode = doc.createElement("event");
-                eventNode.setAttribute("startFrameNo",startFrameCurrentMovement);
-                eventNode.setAttribute("endFrameNo",frames[i].getId()-1);
-                eventNode.setAttribute("typeEvent",typeMovement.c_str());
-                eventsNode.appendChild(eventNode);
 
+                events.push_back(Event(startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str()));
                 startFrameCurrentMovement = frames[i].getId();
             }
             currentMovement = move;
@@ -347,7 +343,7 @@ float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
     return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
 }
 
-void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
+void MovingObject::toXML(TiXmlElement* sequenceNode) {
     XnUInt32 endFrameNo;
 
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
@@ -359,27 +355,33 @@ void MovingObject::toXML(QDomDocument& doc, QDomElement& sequenceNode) {
     file3d << dir << "/3D/keyimage-" << id << ".png";
 
     checkDistance();
+    checkMovement();
+
     outputImagesKey(file2d, file3d);
 
     printf("*** moving object xml %d***\n", id);
-    QDomElement movingObjectNode = doc.createElement("movingObject");
-    movingObjectNode.setAttribute("startFrameNo",startFrameNo);
-    movingObjectNode.setAttribute("endFrameNo",endFrameNo);
-    movingObjectNode.setAttribute("movingObjectType","");
-    movingObjectNode.setAttribute("keyImage2d", file2d.str().c_str());
-    movingObjectNode.setAttribute("keyImage3d",file3d.str().c_str());
-    sequenceNode.appendChild(movingObjectNode);
 
-    QDomElement eventsNode = doc.createElement("events");
-    movingObjectNode.appendChild(eventsNode);
+    TiXmlElement * movingObjectNode = new TiXmlElement("movingObject");
+    movingObjectNode->SetAttribute("startFrameNo", startFrameNo);
+    movingObjectNode->SetAttribute("endFrameNo", endFrameNo);
+    movingObjectNode->SetAttribute("movingObjectType", "");
+    movingObjectNode->SetAttribute("keyImage2d", file2d.str().c_str());
+    movingObjectNode->SetAttribute("keyImage3d", file3d.str().c_str());
+    sequenceNode->LinkEndChild(movingObjectNode);
 
-    checkMovement(doc, eventsNode);
-
-    QDomElement framesNode = doc.createElement("frames");
-    movingObjectNode.appendChild(framesNode);
-    for (int i=0;i<=frames.size();i++){
-        frames[i].toXML(doc, framesNode);
+    //output events
+    TiXmlElement * eventsNode = new TiXmlElement("events");
+    for (int i=0;i<events.size();i++){
+        events[i].toXML(eventsNode);
     }
+    movingObjectNode->LinkEndChild(eventsNode);
+
+    //output frames
+    TiXmlElement * framesNode = new TiXmlElement("frames");
+    for (int i=0;i<frames.size();i++){
+        frames[i].toXML(framesNode);
+    }
+    movingObjectNode->LinkEndChild(framesNode);
 }
 
 void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {

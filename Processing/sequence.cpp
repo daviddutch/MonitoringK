@@ -75,18 +75,17 @@ void Sequence::update() {
     //printf("end update seq\n");
 }
 
-void Sequence::toXML(QDomDocument& doc, QDomElement& movieNode) {
+void Sequence::toXML(TiXmlElement* movieNode) {
     XnUInt32 endFrameNo;
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
     printf("**** sequence XML writing *****\n");
-    QDomElement sequenceNode = doc.createElement("sequence");
-    sequenceNode.setAttribute("startFrameNo",startFrame);
-    sequenceNode.setAttribute("endFrameNo",endFrameNo);
-    movieNode.appendChild(sequenceNode);
+    TiXmlElement * sequenceNode = new TiXmlElement("sequence");
+    sequenceNode->SetAttribute("startFrameNo",startFrame);
+    sequenceNode->SetAttribute("endFrameNo",endFrameNo);
+    movieNode->LinkEndChild(sequenceNode);
     for(int i=0; i < movingObjects.size(); i++) {
-        movingObjects[i].toXML(doc, sequenceNode);
+        movingObjects[i].toXML(sequenceNode);
     }
-
 }
 
 XnPoint3D Sequence::getComByUser(int id)

@@ -16,8 +16,8 @@ CONFIG   -= app_bundle
 INCLUDEPATH += /usr/include/nite
 INCLUDEPATH += /usr/include/ni
 INCLUDEPATH += /usr/include/opencv
-INCLUDEPATH += /home/vinch/qtsdk-2010.05/qt/include/Qt
-#INCLUDEPATH += /home/david/qtsdk-2010.05/qt/include/Qt
+#INCLUDEPATH += /home/vinch/qtsdk-2010.05/qt/include/Qt
+INCLUDEPATH += /home/david/qtsdk-2010.05/qt/include/Qt
 
 
 #LIBS += /home/vinch/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
@@ -46,7 +46,11 @@ SOURCES += main.cpp \
     frame.cpp \
     event.cpp \
     generators.cpp \
-    processor.cpp
+    processor.cpp \
+    tinystr.cpp \
+    tinyxml.cpp \
+    tinyxmlerror.cpp \
+    tinyxmlparser.cpp
 
 OTHER_FILES +=
 
@@ -60,4 +64,6 @@ HEADERS += \
     event.h \
     defs.h \
     generators.h \
-    processor.h
+    processor.h \
+    tinystr.h \
+    tinyxml.h

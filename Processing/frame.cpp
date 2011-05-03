@@ -23,22 +23,22 @@ int Frame::getId()
     return frame;
 }
 
-void Frame::toXML(QDomDocument& doc, QDomElement& framesNode) {
-    QDomElement frameNode = doc.createElement("frame");
-    framesNode.appendChild(frameNode);
+void Frame::toXML(TiXmlElement* framesNode) {
+    TiXmlElement * frameNode = new TiXmlElement("frame");
+    framesNode->LinkEndChild(frameNode);
 
-    QDomElement rectZoneNode = doc.createElement("rectZone");
-    rectZoneNode.setAttribute("top",zone.top);
-    rectZoneNode.setAttribute("right",zone.right);
-    rectZoneNode.setAttribute("bottom",zone.bottom);
-    rectZoneNode.setAttribute("left",zone.left);
-    frameNode.appendChild(rectZoneNode);
+    TiXmlElement * rectZoneNode = new TiXmlElement("rectZone");
+    rectZoneNode->SetAttribute("top", zone.top);
+    rectZoneNode->SetAttribute("right", zone.right);
+    rectZoneNode->SetAttribute("bottom", zone.bottom);
+    rectZoneNode->SetAttribute("left", zone.left);
+    frameNode->LinkEndChild(rectZoneNode);
 
-    QDomElement comNode = doc.createElement("com");
-    comNode.setAttribute("x",com.X);
-    comNode.setAttribute("y",com.Y);
-    comNode.setAttribute("z",com.Z);
-    frameNode.appendChild(comNode);
+    TiXmlElement * comNode = new TiXmlElement("com");
+    comNode->SetAttribute("x", com.X);
+    comNode->SetAttribute("y", com.Y);
+    comNode->SetAttribute("z", com.Z);
+    frameNode->LinkEndChild(comNode);
 }
 Frame::~Frame() {
     //delete zone;
