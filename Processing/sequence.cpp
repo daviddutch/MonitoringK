@@ -6,7 +6,7 @@ Sequence::Sequence(Generators& generators, std::string d) :
     gen(generators),
     dir(d)
 {
-    printf("new Sequence\n");
+    //printf("new Sequence\n");
     gen.player.TellFrame(gen.depth.GetName(), this->startFrame);
     update();
 }
@@ -55,7 +55,7 @@ void Sequence::update() {
 void Sequence::toXML(TiXmlElement* movieNode) {
     XnUInt32 endFrameNo;
     gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
-    printf("**** sequence XML writing *****\n");
+    //printf("**** sequence XML writing *****\n");
     TiXmlElement * sequenceNode = new TiXmlElement("sequence");
     sequenceNode->SetAttribute("startFrameNo",startFrame);
     sequenceNode->SetAttribute("endFrameNo",endFrameNo);
@@ -67,13 +67,13 @@ void Sequence::toXML(TiXmlElement* movieNode) {
 bool Sequence::isSameObject(int indexUser, XnPoint3D com, Metric metric){
     Metric oldMetric = movingObjects[indexUser].getMetric();
     float evolvHeight = abs(metric.height-oldMetric.height)/metric.height;
-    printf("Object :\n\tPourcentage evolv height %f\n", evolvHeight);
+    //printf("Object :\n\tPourcentage evolv height %f\n", evolvHeight);
 
     float evolvWidth = abs(metric.width-oldMetric.width)/metric.width;
-    printf("\tPourcentage evolv width %f\n", evolvWidth);
+    //printf("\tPourcentage evolv width %f\n", evolvWidth);
 
     float dist = getDistance(com, movingObjects[indexUser].getCom());
-    printf("\tDist between com %f\n", dist);
+    //printf("\tDist between com %f\n", dist);
 
     //if (evolvHeight>0.6 || evolvWidth>0.6){
     if (evolvHeight>0.6){

@@ -363,7 +363,7 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     computeDistance();
     checkMovement();
 
-    printf("*** moving object xml %d***\n", id);
+    //printf("*** moving object xml %d***\n", id);
 
     TiXmlElement * movingObjectNode = new TiXmlElement("movingObject");
     movingObjectNode->SetAttribute("startFrameNo", startFrameNo);

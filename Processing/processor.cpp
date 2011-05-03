@@ -45,7 +45,8 @@ int Processor::start(int argc, char **argv) {
     dateStart = fileName.substr(0,fileName.find("."));
 
     //create dire for media
-    std::string dir = fileName.substr(0,fileName.find_last_of("."));
+    instance->dir = "movieData/"+fileName.substr(0,fileName.find_last_of("."));
+    mkdir("movieData", 0777);
     mkdir((dir).c_str(), 0777);
     mkdir((dir+"/2D").c_str(), 0777);
     mkdir((dir+"/3D").c_str(), 0777);
@@ -53,7 +54,7 @@ int Processor::start(int argc, char **argv) {
 
     XnStatus rc = XN_STATUS_OK;
     xn::DepthGenerator g_DepthGenerator;
-    xn::UserGenerator g_UserGenerator;
+    xn::UserGenerator  g_UserGenerator;
     xn::ImageGenerator g_image;
 
     rc = context.Init();
@@ -121,7 +122,7 @@ int Processor::start(int argc, char **argv) {
 
 
     XnUInt32 nFrame, nFrameTot;
-    instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
+    instance->gen->player.GetNumFrames(instance->strNodeName, nFrameTot);
 
 
     if (true){
@@ -168,20 +169,19 @@ void Processor::writeXML() {
     std::ostringstream file;
     file << buffer << "/" << dateStart.c_str() << ".xml";
 
-    printf("current path: %s\n",file.str().c_str());
     doc.SaveFile(file.str().c_str());
 }
 
 void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
-    printf("NewUser %d\n", user);
+    //printf("NewUser %d\n", user);
     if (!instance->hasUserInSight){
         instance->hasUserInSight = true;
-        instance->sequence = new Sequence((*(instance->gen)), instance->fileName.substr(0,instance->fileName.find_last_of(".")));
+        instance->sequence = new Sequence((*(instance->gen)), instance->dir);
     }
     instance->nUser++;
 }
 void XN_CALLBACK_TYPE Processor::LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
-        printf("Lost user %d\n", user);
+        //printf("Lost user %d\n", user);
         instance->nUser--;
         if (instance->nUser==0) {
             instance->sequence->toXML(instance->movieNode);
