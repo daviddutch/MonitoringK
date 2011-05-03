@@ -28,6 +28,7 @@ private:
     xn::Context context;
     int nUser;
     bool hasUserInSight;
+    std::string dir;
     Sequence* sequence;
     TiXmlDocument doc;
     TiXmlElement* movieNode;
