@@ -150,9 +150,9 @@ void Processor::createXML() {
     doc.LinkEndChild( decl );
 
     movieNode = new TiXmlElement("kinectMovie");
-    movieNode->SetAttribute("filenameONI", fileName.c_str());
+    movieNode->SetAttribute("id", fileName.substr(0,fileName.find_last_of(".")).c_str());
     movieNode->SetAttribute("totNumberFrames", nFrameTot);
-    movieNode->SetAttribute("framesPerSeconde", 0);
+    movieNode->SetAttribute("framesPerSeconde", 24); //TODO: find fps
     movieNode->SetAttribute("startDateTime", dateStart.c_str());
     movieNode->SetAttribute("endDateTime", 0);
     doc.LinkEndChild(movieNode);
