@@ -37,6 +37,14 @@ int main(int argc, char *argv[])
     {
         return 0;
     }
+    string fileName;
+    char fileNameBuffer[50];
+    fileName = argv[1];
+    int pos = fileName.find_last_of("/") +1;
+    if (pos < 0 ) pos = 0;
+    fileName = fileName.substr(pos);
+    fileName = fileName.substr(0,fileName.find_last_of("."));
+    sprintf (fileNameBuffer, "%s.avi", fileName.c_str());
 
     nRetVal = g_Context.Init();
     CHECK_RC(nRetVal, "Init");
@@ -84,7 +92,7 @@ int main(int argc, char *argv[])
     int fps     = 25;  // or 30
     int frameW  = 640; // 744 for firewire cameras
     int frameH  = 480; // 480 for firewire cameras
-    writer=cvCreateVideoWriter("out.avi",CV_FOURCC('P','I','M','1'),
+    writer=cvCreateVideoWriter(fileNameBuffer,CV_FOURCC('P','I','M','1'),
                                     fps,cvSize(frameW,frameH),isColor);
 
     //CV_FOURCC('P','I','M','1')
