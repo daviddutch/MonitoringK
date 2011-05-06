@@ -25,12 +25,18 @@ void Sequence::update() {
         XnPoint3D com;
         Metric newMetric;
         gen.user.GetCoM(user, com);
-        if (com.Z!=0){
+        if (com.Z>0.1){
             newMetric = computeMetrics(user, com);
+
             //check if user exist
             for(int i=0; i < movingObjects.size(); i++) {
                 if (movingObjects[i].getXnId()==user){
                     indexUser = i;
+
+                    if (newMetric.width == -1){
+                        newMetric = movingObjects[i].getMetric();
+                        break;
+                    }
 
                     if (!isSameObject(indexUser, com, newMetric)){
                         movingObjects[indexUser].setXnId(0);
@@ -70,7 +76,7 @@ bool Sequence::isSameObject(int indexUser, XnPoint3D com, Metric metric){
     //printf("Object :\n\tPourcentage evolv height %f\n", evolvHeight);
 
     float evolvWidth = abs(metric.width-oldMetric.width)/metric.width;
-    //printf("\tPourcentage evolv width %f\n", evolvWidth);
+    //printf("\tPourcentage evolv width %f / %f\n", evolvWidth , metric.width);
 
     float dist = getDistance(com, movingObjects[indexUser].getCom());
     //printf("\tDist between com %f\n", dist);
@@ -103,24 +109,35 @@ Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
     XnPoint3D rcom;
     int nbOther = 1;
 
+    float f = pDepthMap[j * XN_VGA_X_RES + i];
+    //printf("com.Z : %f pdepthZ : %f\n", com.Z, f);
+    if(f<0.1){
+        metric.width = -1;
+        return metric;
+    }
+    lcom.X = 0;
+    lcom.Y = j;
+    lcom.Z = com.Z;
     for(int x=i;x<XN_VGA_X_RES;x--){
         if (nbOther==0){
-            lcom.X = x;
-            lcom.Y = j;
-            lcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
+            lcom.X = x+2;
+            float f = pDepthMap[j * XN_VGA_X_RES + x+2];
+            lcom.Z = f;
             break;
          }
-
         if (userPix[j * XN_VGA_X_RES + x ] != userId) {
             nbOther--;
          }
     }
     nbOther = 1;
+    rcom.X = XN_VGA_X_RES-1;
+    rcom.Y = j;
+    rcom.Z = com.Z;
     for(int x=i;x<XN_VGA_X_RES;x++){
         if (nbOther==0){
-            rcom.X = x;
-            rcom.Y = j;
-            rcom.Z = pDepthMap[j * XN_VGA_X_RES + x];
+            rcom.X = x-2;
+            float f = pDepthMap[j * XN_VGA_X_RES + x-2];
+            rcom.Z = f;
             break;
         }
         if (userPix[j * XN_VGA_X_RES + x ] != userId) {
@@ -146,17 +163,25 @@ Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
     outputDepth(rect, file3d);
     */
 
-    gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
-    gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
+    XnPoint3D lcom2;
+    XnPoint3D rcom2;
 
-    metric.width = rcom.X - lcom.X;
+    gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom2);
+    gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom2);
 
-    if(lcom.X > 0.1 && rcom.X > 0.1){
+    if(lcom2.Z > 0.1 && rcom2.Z > 0.1){
         //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
         //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
         //float dist = getDistance(lcom, rcom);
-        metric.width = rcom.X - lcom.X;
+        metric.width = rcom2.X - lcom2.X;
         //printf("real world %d distance : %f\n", id, dist);
+    }else{
+        printf("ERROR METRIC\n");
+        printf("%d real world right : (%f, %f, %f)\n", userId, rcom.X, rcom.Y, rcom.Z);
+        printf("%d real world 2 right : (%f, %f, %f)\n", userId, rcom2.X, rcom2.Y, rcom2.Z);
+        printf("%d real world left : (%f, %f, %f)\n", userId, lcom.X, lcom.Y, lcom.Z);
+        printf("%d real world 2 left : (%f, %f, %f)\n", userId, lcom2.X, lcom2.Y, lcom2.Z);
+        printf("%d com  world : (%f, %f, %f)\n", userId, com.X, com.Y, com.Z);
     }
 
 

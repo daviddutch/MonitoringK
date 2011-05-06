@@ -126,7 +126,7 @@ int Processor::start(int argc, char **argv) {
 
 
     if (true){
-        while(nFrame != nFrameTot -1){
+        while(nFrame != nFrameTot -2){
             //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
             // Read next available data
@@ -335,7 +335,6 @@ void Processor::playNextFrame(){
     if (instance->gen->player.SeekToFrame(strNodeName, 1, XN_PLAYER_SEEK_CUR) != XN_STATUS_OK)
              printf("ERROR seektoframe: %s\n", xnGetStatusString(0));
 
-    printf("Num Frame: %d / %d\n", nFrame, nTotFrame);
     g_bStep = true;
     g_bPause = false;
     glutPostRedisplay();
@@ -354,7 +353,6 @@ void Processor::playPrevFrame(){
     if (instance->gen->player.SeekToFrame(strNodeName, -1, XN_PLAYER_SEEK_CUR) != XN_STATUS_OK)
              printf("ERROR seektoframe: %s\n", xnGetStatusString(0));
 
-    printf("Num Frame: %d / %d\n", nFrame, nTotFrame);
     g_bStep = true;
     g_bPause = false;
     glutPostRedisplay();

@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
     CHECK_RC(nRetVal, "Init");
 
     //TEMP : Virtual Kinect ONI file
-    nRetVal = g_Context.OpenFileRecording("Captured5.oni");
-    //nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH);
+    //nRetVal = g_Context.OpenFileRecording("Captured5.oni");
+    nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH);
     CHECK_RC(nRetVal, "InitFromXml");
 
     nRetVal = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
@@ -172,7 +172,13 @@ int main(int argc, char *argv[])
             nRetVal = g_ImageGenerator.Create(g_Context);
             CHECK_RC(nRetVal, "Find image generator");
     }
-
+    /*
+    if(g_DepthGenerator.IsCapabilitySupported("AlternativeViewPoint"))
+            {
+                    nRetVal = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
+                    CHECK_RC(nRetVal, "SetViewPoint for depth generator");
+            }
+    */
     nRetVal = g_Context.StartGeneratingAll();
     CHECK_RC(nRetVal, "StartGenerating");
 
