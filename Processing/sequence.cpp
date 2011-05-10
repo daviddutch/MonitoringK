@@ -25,33 +25,47 @@ void Sequence::update() {
         XnPoint3D com;
         Metric newMetric;
         gen.user.GetCoM(user, com);
+        //printf("USER %d\n", user);
         if (com.Z>0.1){
             newMetric = computeMetrics(user, com);
+            //printf("new Metric width: %f\n",newMetric.width);
+            if (newMetric.width > 0.0){
+                //check if user exist
+                for(int i=0; i < movingObjects.size(); i++) {
+                    if (movingObjects[i].getXnId()==user){
+                        indexUser = i;
 
-            //check if user exist
-            for(int i=0; i < movingObjects.size(); i++) {
-                if (movingObjects[i].getXnId()==user){
-                    indexUser = i;
+                        if (!isSameObject(indexUser, com, newMetric)){
 
-                    if (newMetric.width == -1){
-                        newMetric = movingObjects[i].getMetric();
+                            if(movingObjects[indexUser].getFrames().size()>1){
+                                newMetric.validWidth = (movingObjects[indexUser].getMetric().validWidth < 0.1) ? movingObjects[indexUser].getMetric().width : movingObjects[indexUser].getMetric().validWidth;
+                            }
+                            //printf("\t USER %d countdown.. %f (%f)\n", indexUser, newMetric.validWidth, movingObjects[indexUser].getMetric().width);
+                            if(movingObjects[indexUser].isValidWidthCountDown()){
+                                //printf("THERE IS PROBABLY A NEW USER \n");
+                                movingObjects[indexUser].setXnId(0);
+                                movingObjects[indexUser].resetValidWidth();
+                                movingObjects.push_back(MovingObject(user, gen, dir));
+                                indexUser = movingObjects.size() - 1;
+                                newMetric.validWidth = 0;
+                            }
+                        }else{
+                            //printf("\t valid width:%f\n", newMetric.width);
+                            movingObjects[indexUser].resetValidWidthCountDown();
+                            newMetric.validWidth = newMetric.width;
+                        }
                         break;
                     }
-
-                    if (!isSameObject(indexUser, com, newMetric)){
-                        movingObjects[indexUser].setXnId(0);
-                        movingObjects.push_back(MovingObject(user, gen, dir));
-                        indexUser = movingObjects.size() - 1;
-                    }
-                    break;
                 }
+                //if new user create object
+                if(indexUser<0){
+                    //printf("CREATE A NEW USER \n");
+                    movingObjects.push_back(MovingObject(user, gen, dir));
+                    indexUser = movingObjects.size() - 1;
+                }
+
+                movingObjects[indexUser].update(newMetric); //tells the moving object that there is new data. he can update his self
             }
-            //if new user create object
-            if(indexUser<0){
-                movingObjects.push_back(MovingObject(user, gen, dir));
-                indexUser = movingObjects.size() - 1;
-            }
-            movingObjects[indexUser].update(newMetric); //tells the moving object that there is new data. he can update his self
         }
 
     }
@@ -73,16 +87,16 @@ void Sequence::toXML(TiXmlElement* movieNode) {
 bool Sequence::isSameObject(int indexUser, XnPoint3D com, Metric metric){
     Metric oldMetric = movingObjects[indexUser].getMetric();
     float evolvHeight = abs(metric.height-oldMetric.height)/metric.height;
-    //printf("Object :\n\tPourcentage evolv height %f\n", evolvHeight);
+    //printf("Object %d:\n\tPourcentage evolv height %f\n", indexUser, evolvHeight);
 
-    float evolvWidth = abs(metric.width-oldMetric.width)/metric.width;
-    //printf("\tPourcentage evolv width %f / %f\n", evolvWidth , metric.width);
+    float evolvWidth = abs(metric.width-oldMetric.validWidth)/metric.width;
+    //printf("\tPourcentage evolv width %f / (old:%f, new:%f)\n", evolvWidth , oldMetric.width, metric.width);
 
     float dist = getDistance(com, movingObjects[indexUser].getCom());
     //printf("\tDist between com %f\n", dist);
 
     //if (evolvHeight>0.6 || evolvWidth>0.6){
-    if (evolvHeight>0.6){
+    if (evolvWidth>0.6){
         return false;
     }
     return true;
@@ -145,6 +159,12 @@ Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
         }
     }
 
+    if(lcom.X<=20 || rcom.X>=(XN_VGA_X_RES-20) ){
+        //printf("METRIC LIMIT WIDTH %d\n", userId);
+        metric.width = -1.0;
+        return metric;
+    }
+
 
     /*
     Rect rect;
@@ -187,7 +207,13 @@ Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
 
     //----computes the height of the object
     XnPoint3D top;
+    top.X = i;
+    top.Y = 0;
+    top.Z = com.Z;
     XnPoint3D bottom;
+    bottom.X = i;
+    bottom.Y = XN_VGA_Y_RES-1;
+    bottom.Z = com.Z;
     //top
     for (int y=0; y<XN_VGA_Y_RES; y++){
         for(int x=0;x<XN_VGA_X_RES;x++){
@@ -214,6 +240,13 @@ Metric Sequence::computeMetrics(XnUserID userId, XnPoint3D com) {
      }
     //printf("Top %d : (%f, %f, %f)\n", id, top.X, top.Y, top.Z);
     //printf("Bottom %d : (%f, %f, %f)\n", id, bottom.X, bottom.Y, bottom.Z);
+
+
+    if(top.X<=10 || bottom.X>=(XN_VGA_Y_RES-10) ){
+        //printf("METRIC LIMIT HEIGHT %d\n", userId);
+        metric.width = -1.0;
+        return metric;
+    }
 
     gen.depth.ConvertProjectiveToRealWorld(1, &top, &top);
     gen.depth.ConvertProjectiveToRealWorld(1, &bottom, &bottom);

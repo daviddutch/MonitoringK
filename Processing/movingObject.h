@@ -29,6 +29,13 @@ public:
     bool operator==(const MovingObject &movingObject) const; //equal
     MovingObject& operator=(const MovingObject& rhs);  //assignement
     void outputKeyImages();
+
+    bool isValidWidthCountDown();
+    void resetValidWidthCountDown();
+    void resetValidWidth();
+
+    std::vector<Frame> getFrames();
+
 private:
     static int next_id;
     int id;
@@ -44,6 +51,7 @@ private:
     std::string file2d;
     std::string file3d;
     int stableHeight;
+    int validWidthCount;
 
     void outputImage(Rect rect);
     void outputImage(Rect rect, std::string file);

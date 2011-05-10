@@ -26,6 +26,7 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     file3d = file2.str();
     gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
     stableHeight = 20;
+    validWidthCount = MAX_VALID_WIDTH_COUNT;
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
@@ -311,6 +312,10 @@ void MovingObject::computeComColor(){
     }
 }
 
+std::vector<Frame> MovingObject::getFrames(){
+    return frames;
+}
+
 void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
     float lastZ = 0;
@@ -354,6 +359,25 @@ void MovingObject::computeDistance() {
 
 float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
     return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
+}
+
+bool MovingObject::isValidWidthCountDown(){
+    //printf("\tvalue:%d\n", validWidthCount);
+    if(--validWidthCount < 0){
+        validWidthCount = MAX_VALID_WIDTH_COUNT;
+        return true;
+    }
+
+    return false;
+}
+
+void MovingObject::resetValidWidth(){
+    metric.validWidth = 0;
+    validWidthCount = MAX_VALID_WIDTH_COUNT;
+}
+
+void MovingObject::resetValidWidthCountDown(){
+    validWidthCount = MAX_VALID_WIDTH_COUNT;
 }
 
 void MovingObject::toXML(TiXmlElement* sequenceNode) {

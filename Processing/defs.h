@@ -15,6 +15,8 @@
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
 
+#define MAX_VALID_WIDTH_COUNT 5
+
 
 struct Rect {
     int top;
@@ -33,6 +35,7 @@ struct Rect3D {
 struct Metric {
     float height;
     float width;
+    float validWidth;
     float totDistance;
 };
 #endif // DEFS_H

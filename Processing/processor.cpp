@@ -109,6 +109,12 @@ int Processor::start(int argc, char **argv) {
         printf("Player: %s\n", xnGetStatusString(rc));
     }
 
+    XnStatus nRetVal = context.SetGlobalMirror(true);
+    if (nRetVal != XN_STATUS_OK)
+    {
+            printf("Failed to set global mirror: %s\n", xnGetStatusString(nRetVal));
+    }
+
     gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image, player);
 
     strNodeName = g_DepthGenerator.GetName();
