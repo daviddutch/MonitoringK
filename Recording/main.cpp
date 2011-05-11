@@ -163,6 +163,8 @@ int main(int argc, char *argv[])
     nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH);
     CHECK_RC(nRetVal, "InitFromXml");
 
+    //g_Context.SetGlobalMirror(true); //mirror image
+
     nRetVal = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
     CHECK_RC(nRetVal, "Find depth generator");
 
@@ -172,6 +174,10 @@ int main(int argc, char *argv[])
             nRetVal = g_ImageGenerator.Create(g_Context);
             CHECK_RC(nRetVal, "Find image generator");
     }
+
+    /*nRetVal = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
+    if(nRetVal)
+            printf("Failed to match Depth and RGB points of view: %s\n", xnGetStatusString(nRetVal));
     /*
     if(g_DepthGenerator.IsCapabilitySupported("AlternativeViewPoint"))
             {
@@ -179,6 +185,9 @@ int main(int argc, char *argv[])
                     CHECK_RC(nRetVal, "SetViewPoint for depth generator");
             }
     */
+
+
+
     nRetVal = g_Context.StartGeneratingAll();
     CHECK_RC(nRetVal, "StartGenerating");
 

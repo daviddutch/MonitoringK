@@ -27,6 +27,7 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
     stableHeight = 20;
     validWidthCount = MAX_VALID_WIDTH_COUNT;
+    state = IN_SIGHT;
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;

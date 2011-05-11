@@ -57,8 +57,26 @@ int Processor::start(int argc, char **argv) {
     xn::UserGenerator  g_UserGenerator;
     xn::ImageGenerator g_image;
 
+
+
+
+
+
+
+
+////http://groups.google.com/group/openni-dev/browse_thread/thread/59fbc123ef632528
+
+
+
+
+
+
+
+
     rc = context.Init();
     CHECK_RC(rc, "Init");
+
+    context.SetGlobalMirror(true); //mirror image
 
     rc = context.OpenFileRecording(argv[1]);
     CHECK_RC(rc, "InitFromONI");
@@ -82,6 +100,7 @@ int Processor::start(int argc, char **argv) {
         printf("User generator doesn't support either skeleton or pose detection.\n");
         return XN_STATUS_ERROR;
     }
+
     XnBool isSupported = g_DepthGenerator.IsCapabilitySupported("AlternativeViewPoint");
     if(TRUE == isSupported) {
       XnStatus res = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_image);
@@ -91,6 +110,10 @@ int Processor::start(int argc, char **argv) {
     } else {
         printf("AlternativeViewPoint not supported\n");
     }
+
+    rc = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_image);
+    if(rc)
+            printf("Failed to match Depth and RGB points of view: %s\n", xnGetStatusString(rc));
 
     g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
@@ -109,13 +132,23 @@ int Processor::start(int argc, char **argv) {
         printf("Player: %s\n", xnGetStatusString(rc));
     }
 
-    XnStatus nRetVal = context.SetGlobalMirror(true);
+    /*XnStatus nRetVal = context.SetGlobalMirror(true);
     if (nRetVal != XN_STATUS_OK)
     {
             printf("Failed to set global mirror: %s\n", xnGetStatusString(nRetVal));
     }
+    */
 
     gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image, player);
+
+
+    // Set it to VGA maps at 30 FPS
+    XnMapOutputMode mapMode;
+    mapMode.nXRes = XN_VGA_X_RES;
+    mapMode.nYRes = XN_VGA_Y_RES;
+    mapMode.nFPS = 30;
+    rc = g_DepthGenerator.SetMapOutputMode(mapMode);
+
 
     strNodeName = g_DepthGenerator.GetName();
     createXML();

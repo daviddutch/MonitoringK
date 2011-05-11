@@ -13,6 +13,9 @@
 #include <iostream>
 #include <string>
 
+enum ObjectState { IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
+
+
 class MovingObject
 {
 public:
@@ -52,6 +55,8 @@ private:
     std::string file3d;
     int stableHeight;
     int validWidthCount;
+
+    ObjectState state;
 
     void outputImage(Rect rect);
     void outputImage(Rect rect, std::string file);
