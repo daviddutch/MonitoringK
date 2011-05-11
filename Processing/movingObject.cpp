@@ -55,7 +55,7 @@ void MovingObject::outputImage(Rect rect) {
 
     std::ostringstream file;
     file << "snapshot-" << nFrame << "-" << id << "-rgb.png";
-
+    printf("Rect %d (%d;%d;%d;%d)\n", id, rect.top, rect.right, rect.bottom, rect.left);
     outputImage(rect, file.str());
 }
 void MovingObject::outputImage(Rect rect, std::string file) {

@@ -174,7 +174,6 @@ void Processor::writeXML() {
 
     std::ostringstream file;
     file << buffer << "/" << dateStart.c_str() << ".xml";
-
     doc.SaveFile(file.str().c_str());
 }
 

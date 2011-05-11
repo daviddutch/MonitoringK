@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     //INIT MOVIE
     CvVideoWriter *writer = 0;
     int isColor = 1;
-    int fps     = 25;  // or 30
+    int fps     = 30;  // or 30
     int frameW  = 640; // 744 for firewire cameras
     int frameH  = 480; // 480 for firewire cameras
     writer=cvCreateVideoWriter(fileNameBuffer,CV_FOURCC('P','I','M','1'),

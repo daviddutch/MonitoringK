@@ -146,22 +146,21 @@ int main(int argc, char *argv[])
     printf("\n");
 
     //wait until time start is now or not specify
-    while(true){
+    while(isTimeStart){
         time(&rawtime);
         timeinfo = localtime(&rawtime);
-        printf("current time: %02d:%02d\n", timeinfo->tm_hour, timeinfo->tm_min);
-        if(!isTimeStart || (timeinfo->tm_hour == hour && timeinfo->tm_min == minute) )
+        if((timeinfo->tm_hour == hour && timeinfo->tm_min == minute) )
             break;
+        printf("current time: %02d:%02d\n", timeinfo->tm_hour, timeinfo->tm_min);
         sleep(30);
     }
-
     nRetVal = g_Context.Init();
     CHECK_RC(nRetVal, "Init");
 
-    //TEMP : Virtual Kinect ONI file
-    //nRetVal = g_Context.OpenFileRecording("Captured5.oni");
     nRetVal = g_Context.InitFromXmlFile(SAMPLE_XML_PATH);
     CHECK_RC(nRetVal, "InitFromXml");
+
+    g_Context.SetGlobalMirror(true);
 
     nRetVal = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
     CHECK_RC(nRetVal, "Find depth generator");

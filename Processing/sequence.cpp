@@ -86,6 +86,8 @@ void Sequence::toXML(TiXmlElement* movieNode) {
 }
 bool Sequence::isSameObject(int indexUser, XnPoint3D com, Metric metric){
     Metric oldMetric = movingObjects[indexUser].getMetric();
+    if(metric.height==0.0 || metric.width==0.0)
+        return true;
     float evolvHeight = abs(metric.height-oldMetric.height)/metric.height;
     //printf("Object %d:\n\tPourcentage evolv height %f\n", indexUser, evolvHeight);
 
