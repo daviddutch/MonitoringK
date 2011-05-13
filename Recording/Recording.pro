@@ -23,4 +23,9 @@ LIBS += /home/david/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
 LIBS += /home/david/kinect/Nite-1.3.0.17/Bin/libXnVNite.so
 
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    onirecorder.cpp
+
+HEADERS += \
+    onirecorder.h \
+    defs.h
