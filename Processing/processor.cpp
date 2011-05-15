@@ -110,11 +110,12 @@ int Processor::start(int argc, char **argv) {
     } else {
         printf("AlternativeViewPoint not supported\n");
     }
-
+    /*
     rc = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_image);
     if(rc)
             printf("Failed to match Depth and RGB points of view: %s\n", xnGetStatusString(rc));
 
+    */
     g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
     //Init Player

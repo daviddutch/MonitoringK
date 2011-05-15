@@ -32,7 +32,6 @@ public:
      */
     Event(int startFrameNo, int endFrameNo, std::string type);
 
-
     /**
      * @brief Destructor
      *

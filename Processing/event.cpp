@@ -8,6 +8,10 @@ Event::Event(int startFrameNo, int endFrameNo, std::string type)
     this->endFrameNo = endFrameNo;
     this->type = type;
 }
+Event::~Event(){
+
+}
+
 void Event::toXML(TiXmlElement* eventsNode) {
     TiXmlElement * eventNode = new TiXmlElement("event");
     eventNode->SetAttribute("startFrameNo", startFrameNo);
