@@ -321,25 +321,50 @@ void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
     float lastZ = 0;
     int startFrameCurrentMovement = frames[0].getId();
-    string typeMovement = "";
+    int balanceCount=0;
+    string typeMovement = "Unknown movement";
+    bool newChange = false;
+    bool firstChange = true;
 
     for (int i=0;i<frames.size();i++){
-        float z = frames[i].getCom().Z;
-        if(z < 10000 && z > 0.1){   //possible value
+        float z = frames[i].getCom().Z; //get the current human depth
+        if(z < 10000.0 && z > 0.1){   //possible value
             int move;
-            if(lastZ - z > 0){
+            //printf("\tcurrent move:%d newChange:%d\n", currentMovement, newChange);
+            //printf("\tz:%f last:%f dif:%f\n", z, lastZ, (lastZ - z));
+            if(lastZ - z > 0){  //Difference between 2 frames
                 move = 2;
-                typeMovement = "entering";
+                if(currentMovement == move){
+                    balanceCount++;
+                }else{
+                    balanceCount = 1;
+                    typeMovement = "entering";
+                }
             }else{
                 move = 1;
-                typeMovement = "going out";
+                if(currentMovement == move){
+                    balanceCount--;
+                }else{
+                    balanceCount = -1;
+                    typeMovement = "going out";
+                }
             }
-
-            if( (currentMovement != move && currentMovement !=-1) || i==(frames.size()-1) ){
+            if ( abs(balanceCount)==3){ //if movement seems stable
+                //printf("\tcurrent balanceCount:%d newChange:%d\n", balanceCount, newChange);
+                if (firstChange){
+                    firstChange = false;
+                }else{
+                    newChange = true;
+                }
+            }
+            if(newChange || i==(frames.size()-1)){  //if changement of direction or end of frames
+                //printf("new change. frames (%d to %d) lastz :%f (%f - %f)\n",startFrameCurrentMovement, frames[i].getId()-1,(lastZ- z), lastZ, z);
+                //Add new event with information
                 events.push_back(Event(startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str()));
                 startFrameCurrentMovement = frames[i].getId();
+                newChange = false;
             }
-            currentMovement = move;
+            currentMovement = move; //update movement and current Z
             lastZ = z;
         }
     }
