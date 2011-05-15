@@ -17,13 +17,13 @@ INCLUDEPATH += /usr/include/nite
 INCLUDEPATH += /usr/include/ni
 INCLUDEPATH += /usr/include/opencv
 #INCLUDEPATH += /home/vinch/qtsdk-2010.05/qt/include/Qt
-INCLUDEPATH += /home/david/qtsdk-2010.05/qt/include/Qt
+INCLUDEPATH += ~/qtsdk-2010.05/qt/include/Qt
 
 
 #LIBS += /home/vinch/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
 #LIBS += /home/vinch/kinect/NITE/Nite-1.3.0.17/Bin/libXnVNite.so
-LIBS += /home/david/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
-LIBS += /home/david/kinect/Nite-1.3.0.17/Bin/libXnVNite.so
+LIBS += ~/kinect/OpenNI/Platform/Linux-x86/Bin/Release/libOpenNI.so
+LIBS += ~/kinect/Nite-1.3.0.17/Bin/libXnVNite.so
 
 
 
