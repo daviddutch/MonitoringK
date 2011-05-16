@@ -10,13 +10,13 @@
 #include "onirecorder.h"
 
 int main(int argc, char *argv[]) {
-    std::string destination;    //destination to save ONI
-    long duration;              //recording duration in second
-    int hour = 0, minute = 0;   //time set by user to start recording
-    bool isTimeStart = false;   //is user set a time to start recording
-    time_t rawtime;             //current time
-    struct tm *timeinfo;        //current time
-    QStringList list;           //use to split string
+    std::string destination = "";   //destination to save ONI
+    long duration;                  //recording duration in second
+    int hour = 0, minute = 0;       //time set by user to start recording
+    bool isTimeStart = false;       //is user set a time to start recording
+    time_t rawtime;                 //current time
+    struct tm *timeinfo;            //current time
+    QStringList list;               //use to split string
 
     //Check args
     if (argc > 1) {

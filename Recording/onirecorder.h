@@ -25,7 +25,6 @@
 class OniRecorder
 {
 public:
-
     /**
      * @brief Constructor
      *
@@ -36,17 +35,23 @@ public:
      */
     OniRecorder(long duration, std::string destination);
 
-
     /**
      * @brief Starts the recording
      */
     void start();
 
-
     /**
      * @brief Ends the recording
      */
     void stop();
+
+    /**
+     * @brief Initialize the OpenNI environment. The Kinect must be connected before this method is called
+     *
+     * Initialize the OpenNI environment. The Kinect must be connected before this method is called
+     *
+     */
+    void init();
 
 
 private:
@@ -61,14 +66,6 @@ private:
 
     long duration;  /*!< Duration of the recording*/
 
-
-    /**
-     * @brief Initialize the OpenNI environment. The Kinect must be connected before this method is called
-     *
-     * Initialize the OpenNI environment. The Kinect must be connected before this method is called
-     *
-     */
-    void init();
 
 
     /**

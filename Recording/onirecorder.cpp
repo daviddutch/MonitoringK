@@ -44,7 +44,7 @@ void OniRecorder::start() {
     XnUInt32 size;
     xnOSStrFormat(recordFile, sizeof(recordFile)-1, &size,
              "%s%d-%02d-%02dT%02d_%02d_%02d.oni",
-            *destination.c_str(), timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+            destination.c_str(), timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 
     recorder = new xn::Recorder;
 
