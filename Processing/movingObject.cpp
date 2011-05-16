@@ -313,8 +313,84 @@ void MovingObject::computeComColor(){
     }
 }
 
+<<<<<<< Updated upstream
 std::vector<Frame> MovingObject::getFrames(){
     return frames;
+=======
+void MovingObject::computeMetrics() {
+    xn::SceneMetaData sceneMetaData;
+    gen.user.GetUserPixels(id, sceneMetaData);
+    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
+
+    XnPoint3D com;
+    gen.user.GetCoM(id, com);
+    XnPoint3D com2, com3;
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    gen.depth.ConvertProjectiveToRealWorld(1, &com, &com3);
+    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
+    if (com.Z != 0) {
+        //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
+        //printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
+        //printf("other world : (%d, %d, %f)\n", com3.X, com3.Y, com3.Z);
+        int i = (int)com2.X;
+        int j = (int)com2.Y;
+
+        //computes the with of the object on the center of gravity
+        XnPoint3D lcom;
+        XnPoint3D rcom;
+        int nbOther = 1;
+        bool found = false;
+        for (int y=j; y<XN_VGA_Y_RES; y++){
+            for(int x=i;x<XN_VGA_X_RES;x--){
+                if (nbOther==0){
+                    lcom.X = x+1;
+                    lcom.Y = y;
+                    lcom.Z = pDepthMap[y * XN_VGA_X_RES + x + 1];
+                    found = true;
+                    break;
+                }
+                if (userPix[y * XN_VGA_X_RES + x ] != id) {
+                    nbOther--;
+                }
+            }
+            if (found) break;
+        }
+        nbOther = 1;
+        found = false;
+        for (int y=j; y<XN_VGA_Y_RES; y++){
+            for(int x=i;x<XN_VGA_X_RES;x++){
+                if (nbOther==0){
+                    rcom.X = x-1;
+                    rcom.Y = y;
+                    rcom.Z = pDepthMap[y * XN_VGA_X_RES + x-1];
+                    found = true;
+                    break;
+                }
+                if (userPix[y * XN_VGA_X_RES + x ] != id) {
+                    nbOther--;
+                }
+            }
+            if (found) break;
+        }
+        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
+        gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
+        //if(lcom.X > 0.1 && rcom.X > 0.1){
+            printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
+            printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
+            float dist = getDistance(lcom, rcom);
+            printf("real world %d distance : %f\n", id, dist);
+
+        this->com.X = com2.X;
+        this->com.Y = com2.Y;
+        this->com.Z = com2.Z;
+
+    }
+}
+
+float MovingObject::getHeight() {
+
+    return height;
+>>>>>>> Stashed changes
 }
 
 void MovingObject::checkMovement() {
@@ -444,9 +520,29 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     }
     movingObjectNode->LinkEndChild(framesNode);
 }
+<<<<<<< Updated upstream
 void MovingObject::outputKeyImages() {
     XnUInt32 nFrame;
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
     outputImage(frames[nFrame-startFrameNo].getZone(), file2d);
     outputDepth(frames[nFrame-startFrameNo].getZone(), file3d);
+=======
+
+void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
+    XnUInt32 no;
+
+
+    int key = frames[frames.size()/2].getId();
+    printf("key: %d\n", key);
+    gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
+    gen.player.TellFrame(gen.depth.GetName(), no);
+    printf("seek: %d\n", no);
+
+    outputImage(frames[frames.size()/2].getZone(), file2d);
+
+    //outputImage(frames[frames.size()/2].getZone());
+    //outputDepth(rect);
+
+    gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
+>>>>>>> Stashed changes
 }
