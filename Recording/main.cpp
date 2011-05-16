@@ -9,11 +9,6 @@
 
 #include "onirecorder.h"
 
-/***
-  *
-  *
-  *
-  */
 int main(int argc, char *argv[]) {
     std::string destination;    //destination to save ONI
     long duration;              //recording duration in second
@@ -43,27 +38,11 @@ int main(int argc, char *argv[]) {
                 break;
         }
     } else {
-        printf("\nRecorder usage : recorder [duration sec]* [destination ONI] [Time start] \n");
-        printf("       example : recorder 120 /home/user/ 12:30 \n");
-        printf("       example : recorder 60 \n");
+        printf("\nRecorder usage : recorder [duration sec]* [destination ONI file] [Time start] \n");
+        printf("       exemple : recorder 120 /home/user/ 12:30 \n");
+        printf("       exemple : recorder 60 \n");
         return 0;
     }
-    /*
-    printf("the recording will start ");
-    if(isTimeStart) {
-        printf("at %02d:%02d", hour, minute);
-    } else {
-        printf("now");
-    }
-    printf(" during %d sec and will be saved in ", duration);
-
-    if(destination != "") {
-        printf("%s", destination.c_str());
-    } else {
-        printf("the same directory");
-    }
-    printf("\n");
-    */
 
     //wait until time start is now or not specify
     while(isTimeStart){
@@ -75,13 +54,10 @@ int main(int argc, char *argv[]) {
         sleep(30);
     }
 
-
+    //Create the recorder and start it
     OniRecorder recorder(duration, destination);
-
     recorder.init();
-
     recorder.start();
-
 
     return 1;
 }

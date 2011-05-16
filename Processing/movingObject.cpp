@@ -313,10 +313,11 @@ void MovingObject::computeComColor(){
     }
 }
 
-<<<<<<< Updated upstream
+
 std::vector<Frame> MovingObject::getFrames(){
     return frames;
-=======
+}
+/*
 void MovingObject::computeMetrics() {
     xn::SceneMetaData sceneMetaData;
     gen.user.GetUserPixels(id, sceneMetaData);
@@ -390,8 +391,8 @@ void MovingObject::computeMetrics() {
 float MovingObject::getHeight() {
 
     return height;
->>>>>>> Stashed changes
 }
+*/
 
 void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
@@ -520,15 +521,15 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     }
     movingObjectNode->LinkEndChild(framesNode);
 }
-<<<<<<< Updated upstream
+
 void MovingObject::outputKeyImages() {
     XnUInt32 nFrame;
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
     outputImage(frames[nFrame-startFrameNo].getZone(), file2d);
     outputDepth(frames[nFrame-startFrameNo].getZone(), file3d);
-=======
+}
 
-void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
+/*void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
     XnUInt32 no;
 
 
@@ -544,5 +545,5 @@ void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstrea
     //outputDepth(rect);
 
     gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
->>>>>>> Stashed changes
 }
+*/

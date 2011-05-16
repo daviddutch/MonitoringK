@@ -4,6 +4,7 @@
  * @author David Dutch, Vincent Ischi
  * @version 1.0
  *
+ * ONIRecorder
  */
 
 #ifndef ONIRECORDER_H
@@ -17,8 +18,8 @@
  * @class OniRecorder
  * @brief Class used to save an OpenNI flow
  *
- * Class used to save an OpenNI flow into a single file
- * The file contains the depth frames and the rgb frames
+ * Class used to save a video flow into a single file using OpenNI Framework
+ * The output file contains the depth frames and the rgb frames
  * The file is in ONI format
  */
 class OniRecorder
