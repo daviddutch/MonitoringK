@@ -25,9 +25,13 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     file2d = file1.str();
     file3d = file2.str();
     gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
-    stableHeight = 20;
+    stableHeight = 5;
     validWidthCount = MAX_VALID_WIDTH_COUNT;
-    state = IN_SIGHT;
+    stateVars.inSeperationCount = MAX_VALID_WIDTH_COUNT;
+    state = NEW;
+    metric.height = 0;
+    metric.width = 0;
+    metric.validWidth = 0;
 }
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
@@ -105,7 +109,6 @@ void MovingObject::outputImage(Rect rect, std::string file) {
     cvReleaseImageHeader(&rgbimg);
     //delete[] ucpImage;
 }
-
 void MovingObject::outputDepth(Rect rect) {
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -155,7 +158,7 @@ void MovingObject::outputDepth(Rect rect, std::string file) {
 }
 
 void MovingObject::update(Metric newMetric) {
-   // printf("update movingObject(%d)\n", id);
+    //printf("update movingObject(%d)\n", id);
 
     XnUInt32 nFrame;
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -169,6 +172,8 @@ void MovingObject::update(Metric newMetric) {
     unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
 
     gen.user.GetCoM(xnUserId, com);
+
+
 
     if (com.Z != 0){ //TODO: is that correct, working ?????
         Rect rect;
@@ -187,25 +192,102 @@ void MovingObject::update(Metric newMetric) {
                 }
             }
         }
-        computeComColor();
-
         frames.push_back(Frame(nFrame, rect, com));
+
+        //computeComColor();
+
 
         float evolvHeight = abs(metric.height-this->metric.height)/metric.height;
         if (evolvHeight<0.1 && stableHeight>0){
             stableHeight--;
-            if (stableHeight==0)
+            if (stableHeight==0){
                 outputKeyImages();
+                metric.validWidth = metric.width;
+            }
         }else if (stableHeight>0){
-            stableHeight=20;
+            stableHeight=5;
         }
-        metric = newMetric;
+        //metric = newMetric;
     }else{
-        //xnUserId = 0;
-        printf("should not happen !!!!\n");
+        if (state != NEW)
+            xnUserId = 0;
+        //printf("should not happen !!!!\n");
     }
-    if (nFrame==startFrameNo)
+    if (nFrame==startFrameNo && state != NEW)
         outputKeyImages();
+
+    updateState();
+    printf("State : %d %d \n", state, id);
+}
+void MovingObject::updateState() {
+    //printf("updateState\n");
+    if (state == SEPERATED) return;
+
+    if (com.Z == 0 && state == NEW){ //stay NEW
+        return;
+    }
+    if (com.Z == 0 && state != NEW){ //anyway != then NEW
+        state = OUT_OF_SIGHT;
+        return;
+    }
+
+    if (frames.size()!=0) {
+        Rect rect = frames[frames.size()-1].getZone();
+        if (rect.top==0 || rect.left==0 || rect.bottom==XN_VGA_Y_RES || rect.right==XN_VGA_X_RES){
+            state = IN_BORDER;
+            return;
+        }
+    }
+    bool isInSep = isInSeperation();
+    if (isInSep && state != IN_SEPERATION) {
+        state = IN_SEPERATION;
+        stateVars.inSeperationCount = MAX_VALID_WIDTH_COUNT;
+        return;
+    }else if (isInSep){
+        stateVars.inSeperationCount--;
+        if (stateVars.inSeperationCount==0){
+            state = SEPERATED;
+        }
+        return;
+    }else{
+        metric.validWidth = metric.width;
+    }
+
+    state = IN_SIGHT;
+}
+bool MovingObject::isInSeperation() {
+    Metric newMetric;
+    newMetric.height = computeHeight();
+    newMetric.width  = computeWidth();
+
+    //Metric oldMetric = movingObjects[indexUser].getMetric();
+    if(newMetric.height==0.0 || newMetric.width==0.0)
+        return false;
+
+    //float evolvHeight = abs(newMetric.height-metric.height)/newMetric.height;
+    //printf("Object %d:\n\tPourcentage evolv height %f\n", indexUser, evolvHeight);
+
+    if (newMetric.width<0){
+        newMetric.height = metric.height;
+        newMetric.width = metric.width;
+    }
+
+    float evolvWidth = abs(newMetric.width-metric.validWidth)/newMetric.width;
+    printf("\tPourcentage evolv width %f / (old:%f, new:%f, valid:%f)\n", evolvWidth , metric.width, newMetric.width, metric.validWidth);
+
+    //float dist = getDistance(com, movingObjects[indexUser].getCom());
+    //printf("\tDist between com %f\n", dist);1.230761
+
+    //if (evolvHeight>0.6 || evolvWidth>0.6){
+
+
+    metric.height = newMetric.height;
+    metric.width = newMetric.width;
+
+    if (evolvWidth>0.6){
+        return true;
+    }
+    return false;
 }
 
 //Source : http://www.compuphase.com/cmetric.htm
@@ -449,4 +531,172 @@ void MovingObject::outputKeyImages() {
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
     outputImage(frames[nFrame-startFrameNo].getZone(), file2d);
     outputDepth(frames[nFrame-startFrameNo].getZone(), file3d);
+}
+
+
+
+float MovingObject::computeWidth() {
+    xn::SceneMetaData sceneMetaData;
+    gen.user.GetUserPixels(xnUserId, sceneMetaData);
+    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
+
+    XnPoint3D com2;
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
+
+    int i = (int)com2.X;
+    int j = (int)com2.Y;
+
+    //----computes the with of the object on the center of gravity
+    XnPoint3D lcom;
+    XnPoint3D rcom;
+    int nbOther = 1;
+
+    float f = pDepthMap[j * XN_VGA_X_RES + i];
+    //printf("com.Z : %f pdepthZ : %f\n", com.Z, f);
+    if(f<0.1){ //TODO: f user pix or 0
+        return -1;
+    }
+    lcom.X = 0;
+    lcom.Y = j;
+    lcom.Z = com.Z;
+    for(int x=i;x<XN_VGA_X_RES;x--){
+        if (nbOther==0){
+            lcom.X = x+2;
+            float f = pDepthMap[j * XN_VGA_X_RES + x+2];
+            lcom.Z = f;
+            break;
+         }
+        if (userPix[j * XN_VGA_X_RES + x ] != xnUserId) {
+            nbOther--;
+         }
+    }
+    nbOther = 1;
+    rcom.X = XN_VGA_X_RES-1;
+    rcom.Y = j;
+    rcom.Z = com.Z;
+    for(int x=i;x<XN_VGA_X_RES;x++){
+        if (nbOther==0){
+            rcom.X = x-2;
+            float f = pDepthMap[j * XN_VGA_X_RES + x-2];
+            rcom.Z = f;
+            break;
+        }
+        if (userPix[j * XN_VGA_X_RES + x ] != xnUserId) {
+            nbOther--;
+        }
+    }
+
+    if(lcom.X<=20 || rcom.X>=(XN_VGA_X_RES-20) ){
+        return -1;
+    }
+
+
+    /*
+    Rect rect;
+    rect.top       = rcom.Y-5;
+    rect.right     = rcom.X;
+    rect.bottom    = rcom.Y+5;
+    rect.left      = lcom.X;
+
+    XnUInt32 nFrame;
+    gen.player.TellFrame(gen.depth.GetName(), nFrame);
+    std::ostringstream file2d;
+    file2d << dir << "/2D/metric-" << nFrame << ".png";
+    outputImage(rect, file2d);
+    std::ostringstream file3d;
+    file3d << dir << "/3D/metric-" << nFrame << ".png";
+    outputDepth(rect, file3d);
+    */
+
+    XnPoint3D lcom2;
+    XnPoint3D rcom2;
+
+    gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom2);
+    gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom2);
+
+    if(lcom2.Z > 0.1 && rcom2.Z > 0.1){
+        //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
+        //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
+        //float dist = getDistance(lcom, rcom);
+        return rcom2.X - lcom2.X;
+        //printf("real world %d distance : %f\n", id, dist);
+    }else{
+        printf("ERROR METRIC\n");
+        printf("%d real world right : (%f, %f, %f)\n", xnUserId, rcom.X, rcom.Y, rcom.Z);
+        printf("%d real world 2 right : (%f, %f, %f)\n", xnUserId, rcom2.X, rcom2.Y, rcom2.Z);
+        printf("%d real world left : (%f, %f, %f)\n", xnUserId, lcom.X, lcom.Y, lcom.Z);
+        printf("%d real world 2 left : (%f, %f, %f)\n", xnUserId, lcom2.X, lcom2.Y, lcom2.Z);
+        printf("%d com  world : (%f, %f, %f)\n", xnUserId, com.X, com.Y, com.Z);
+        return -1;
+    }
+}
+float MovingObject::computeHeight() {
+    xn::SceneMetaData sceneMetaData;
+    gen.user.GetUserPixels(xnUserId, sceneMetaData);
+    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
+
+    XnPoint3D com2;
+    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
+    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
+
+    int i = (int)com2.X;
+
+    //----computes the height of the object
+    XnPoint3D top;
+    top.X = i;
+    top.Y = 0;
+    top.Z = com.Z;
+    XnPoint3D bottom;
+    bottom.X = i;
+    bottom.Y = XN_VGA_Y_RES-1;
+    bottom.Z = com.Z;
+    //top
+    for (int y=0; y<XN_VGA_Y_RES; y++){
+        for(int x=0;x<XN_VGA_X_RES;x++){
+            if (userPix[y * XN_VGA_X_RES + x ] == xnUserId) {
+                top.X = x;
+                top.Y = y;
+                top.Z = pDepthMap[y * XN_VGA_X_RES + x];
+                y = XN_VGA_Y_RES; //make it exit the outer loop
+                break;
+            }
+        }
+    }
+    //bottom
+    for (int y=XN_VGA_Y_RES-1; y>=0; y--){
+        for(int x=XN_VGA_X_RES-1;x>=0;x--){
+            if (userPix[y * XN_VGA_X_RES + x ] == xnUserId) {
+                bottom.X = x;
+                bottom.Y = y;
+                bottom.Z = pDepthMap[y * XN_VGA_X_RES + x];
+                y = -1; //make it exit the outer loop
+                break;
+            }
+         }
+     }
+    //printf("Top %d : (%f, %f, %f)\n", id, top.X, top.Y, top.Z);
+    //printf("Bottom %d : (%f, %f, %f)\n", id, bottom.X, bottom.Y, bottom.Z);
+
+
+    if(top.X<=10 || bottom.X>=(XN_VGA_Y_RES-10) ){
+        //printf("METRIC LIMIT HEIGHT %d\n", userId);
+        return -1;
+    }
+
+    gen.depth.ConvertProjectiveToRealWorld(1, &top, &top);
+    gen.depth.ConvertProjectiveToRealWorld(1, &bottom, &bottom);
+
+    //float dist = getDistance(top, bottom);
+    //printf("real world %d height with dist : %f height with diff : %f\n", id, dist, top.Y-bottom.Y);
+
+    return top.Y-bottom.Y;
+}
+
+Metric MovingObject::computeMetrics(XnPoint3D com) {
+    Metric metric;
+
+
+
+    return metric;
 }

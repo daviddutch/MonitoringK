@@ -20,6 +20,39 @@ void Sequence::update() {
         return;
     }
 
+
+    Metric newMetric;
+    newMetric.height = 0;
+    newMetric.width = 0;
+
+    for (int user=1; user<=nbUsers;user++){
+        int indexUser=-1;
+        for (int i=0; i < movingObjects.size(); i++) {
+            if (movingObjects[i].getXnId()==user) {
+                indexUser = i;
+                movingObjects[i].update(newMetric); //tells the moving object that there is new data. he can update his self
+            }
+        }
+        if (indexUser<0) {
+            printf("CREATE A NEW USER \n");
+            movingObjects.push_back(MovingObject(user, gen, dir));
+            indexUser = movingObjects.size() - 1;
+            movingObjects[indexUser].update(newMetric); //tells the moving object that there is new data. he can update his self
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    return;
+
     for (int user=1; user<=nbUsers;user++){
         int indexUser=-1;
         XnPoint3D com;

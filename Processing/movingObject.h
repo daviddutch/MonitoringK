@@ -13,7 +13,7 @@
 #include <iostream>
 #include <string>
 
-enum ObjectState { IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
+enum ObjectState { NEW, IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
 
 
 class MovingObject
@@ -56,6 +56,8 @@ private:
     int stableHeight;
     int validWidthCount;
 
+    StateVars stateVars;
+
     ObjectState state;
 
     void outputImage(Rect rect);
@@ -66,6 +68,15 @@ private:
     void computeDistance();
     float getDistance(XnPoint3D p1, XnPoint3D p2);
     void computeComColor();
+
+    Metric computeMetrics(XnPoint3D com);
+
+    float computeWidth();
+    float computeHeight();
+
+    void updateState();
+
+    bool isInSeperation();
 
 };
 

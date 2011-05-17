@@ -65,4 +65,16 @@ struct Metric {
     float validWidth; /*!< A valid width */
     float totDistance;/*!< The total distance the object moved */
 };
+
+/**
+ * @struct StateVars
+ * @brief Variables describing a state
+ *
+ * Variables describing a state
+ */
+struct StateVars {
+    int inSeperationCount;
+    int seperatedCount;
+
+};
 #endif // DEFS_H
