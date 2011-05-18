@@ -35,8 +35,8 @@ void Sequence::update() {
                 movingObjects[i].update(newMetric); //tells the moving object that there is new data. he can update his self
             }
         }
-        if (indexUser<0 && com.Z!=0.0) {
-            printf("CREATE A NEW USER \n");
+        if (indexUser<0 && (com.Z > 0.001)) {
+            //printf("CREATE A NEW USER (%d)\n", user);
             for (int j=0; j < movingObjects.size(); j++) {
                 if(movingObjects[j].getState() == SEPERATED){
                     printf("%d object is separated -> OUT_OF_SIGHT \n", movingObjects[j].getXnId());

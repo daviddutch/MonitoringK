@@ -186,7 +186,7 @@ void MovingObject::update(Metric newMetric) {
 
 
 
-    if (com.Z != 0){ //TODO: is that correct, working ?????
+    if (com.Z > 0.001){ //TODO: is that correct, working ?????
         Rect rect;
         rect.top    = XN_VGA_Y_RES+1;
         rect.right  = -1;
@@ -232,10 +232,10 @@ void MovingObject::updateState() {
     //printf("updateState\n");
     if (state == SEPERATED) return;
 
-    if (com.Z == 0 && state == NEW){ //stay NEW
+    if ((com.Z < 0.001) && state == NEW){ //stay NEW
         return;
     }
-    if (com.Z == 0 && state != NEW){ //anyway != then NEW
+    if ((com.Z < 0.001) && state != NEW){ //anyway != then NEW
         state = OUT_OF_SIGHT;
         xnUserId = 0;
         return;
@@ -316,7 +316,7 @@ void MovingObject::computeComColor(){
     gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
     int zoneSize = 2;
 
-    if (com.Z != 0) {
+    if (com.Z > 0.001) {
         int i = (int)com2.X;
         int j = (int)com2.Y;
 
