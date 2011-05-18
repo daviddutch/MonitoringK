@@ -25,7 +25,9 @@ int Frame::getId()
 
 void Frame::toXML(TiXmlElement* framesNode) {
     TiXmlElement * frameNode = new TiXmlElement("frame");
+    frameNode->SetAttribute("id", frame);
     framesNode->LinkEndChild(frameNode);
+
 
     TiXmlElement * rectZoneNode = new TiXmlElement("rectZone");
     rectZoneNode->SetAttribute("top", zone.top);

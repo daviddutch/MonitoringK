@@ -77,4 +77,7 @@ struct StateVars {
     int seperatedCount;
 
 };
+
+
+enum ObjectState { NEW, IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
 #endif // DEFS_H

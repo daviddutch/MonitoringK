@@ -13,7 +13,6 @@
 #include <iostream>
 #include <string>
 
-enum ObjectState { NEW, IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
 
 
 class MovingObject
@@ -36,6 +35,9 @@ public:
     bool isValidWidthCountDown();
     void resetValidWidthCountDown();
     void resetValidWidth();
+
+    ObjectState getState();
+    void setState(ObjectState s);
 
     std::vector<Frame> getFrames();
 
@@ -77,6 +79,8 @@ private:
     void updateState();
 
     bool isInSeperation();
+
+    Frame findFrameById(int id);
 
 };
 

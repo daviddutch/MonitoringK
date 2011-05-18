@@ -143,15 +143,7 @@ int Processor::start(int argc, char **argv) {
     gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image, player);
 
 
-    // Set it to VGA maps at 30 FPS
-    XnMapOutputMode mapMode;
-    mapMode.nXRes = XN_VGA_X_RES;
-    mapMode.nYRes = XN_VGA_Y_RES;
-    mapMode.nFPS = 30;
-    rc = g_DepthGenerator.SetMapOutputMode(mapMode);
-
-
-    strNodeName = g_DepthGenerator.GetName();
+    strNodeName = g_image.GetName();
     createXML();
 
     rc = context.StartGeneratingAll();
@@ -165,7 +157,7 @@ int Processor::start(int argc, char **argv) {
     instance->gen->player.GetNumFrames(instance->strNodeName, nFrameTot);
 
 
-    if (false){
+    if (true){
         while(nFrame != nFrameTot -2){
             //printf("start while\n");
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);

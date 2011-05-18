@@ -7,7 +7,7 @@ Sequence::Sequence(Generators& generators, std::string d) :
     dir(d)
 {
     //printf("new Sequence\n");
-    gen.player.TellFrame(gen.depth.GetName(), this->startFrame);
+    gen.player.TellFrame(gen.image.GetName(), this->startFrame);
     update();
 }
 
@@ -27,17 +27,27 @@ void Sequence::update() {
 
     for (int user=1; user<=nbUsers;user++){
         int indexUser=-1;
+        XnPoint3D com;
+        gen.user.GetCoM(user, com);
         for (int i=0; i < movingObjects.size(); i++) {
             if (movingObjects[i].getXnId()==user) {
                 indexUser = i;
                 movingObjects[i].update(newMetric); //tells the moving object that there is new data. he can update his self
             }
         }
-        if (indexUser<0) {
+        if (indexUser<0 && com.Z!=0.0) {
             printf("CREATE A NEW USER \n");
+            for (int j=0; j < movingObjects.size(); j++) {
+                if(movingObjects[j].getState() == SEPERATED){
+                    printf("%d object is separated -> OUT_OF_SIGHT \n", movingObjects[j].getXnId());
+                    movingObjects[j].setState(OUT_OF_SIGHT);
+                    movingObjects[j].setXnId(0);
+                }
+            }
             movingObjects.push_back(MovingObject(user, gen, dir));
             indexUser = movingObjects.size() - 1;
             movingObjects[indexUser].update(newMetric); //tells the moving object that there is new data. he can update his self
+
         }
     }
 
@@ -107,8 +117,7 @@ void Sequence::update() {
 
 void Sequence::toXML(TiXmlElement* movieNode) {
     XnUInt32 endFrameNo;
-    gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
-    //printf("**** sequence XML writing *****\n");
+    gen.player.TellFrame(gen.image.GetName(), endFrameNo);
     TiXmlElement * sequenceNode = new TiXmlElement("sequence");
     sequenceNode->SetAttribute("startFrameNo",startFrame);
     sequenceNode->SetAttribute("endFrameNo",endFrameNo);

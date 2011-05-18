@@ -24,7 +24,7 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     file2 << dir << "/3D/keyimage-" << id << ".png";
     file2d = file1.str();
     file3d = file2.str();
-    gen.player.TellFrame(gen.depth.GetName(), startFrameNo);
+    gen.player.TellFrame(gen.image.GetName(), startFrameNo);
     stableHeight = 5;
     validWidthCount = MAX_VALID_WIDTH_COUNT;
     stateVars.inSeperationCount = MAX_VALID_WIDTH_COUNT;
@@ -54,6 +54,13 @@ void MovingObject::setXnId(XnUserID xnUserId) {
 Metric MovingObject::getMetric() {
     return metric;
 }
+ObjectState MovingObject::getState(){
+    return state;
+}
+void MovingObject::setState(ObjectState s){
+    state=s;
+}
+
 void MovingObject::outputImage(Rect rect) {
     XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
     gen.player.TellFrame(gen.depth.GetName(), nFrame);
@@ -160,8 +167,12 @@ void MovingObject::outputDepth(Rect rect, std::string file) {
 void MovingObject::update(Metric newMetric) {
     //printf("update movingObject(%d)\n", id);
 
-    XnUInt32 nFrame;
-    gen.player.TellFrame(gen.depth.GetName(), nFrame);
+
+    XnUInt32 nFrame3D, nFrame2D;
+    gen.player.TellFrame(gen.depth.GetName(), nFrame3D);
+    gen.player.TellFrame(gen.image.GetName(), nFrame2D);
+
+    //printf("update %d nframe:%d %d\n", id, nFrame3D, nFrame2D);
 
     xn::SceneMetaData sceneMetaData;
     xn::DepthMetaData depthMetaData;
@@ -192,7 +203,7 @@ void MovingObject::update(Metric newMetric) {
                 }
             }
         }
-        frames.push_back(Frame(nFrame, rect, com));
+        frames.push_back(Frame(nFrame2D, rect, com));
 
         //computeComColor();
 
@@ -207,17 +218,15 @@ void MovingObject::update(Metric newMetric) {
         }else if (stableHeight>0){
             stableHeight=5;
         }
+
         //metric = newMetric;
-    }else{
-        if (state != NEW)
-            xnUserId = 0;
-        //printf("should not happen !!!!\n");
+        if (nFrame3D==startFrameNo && state != NEW && state != OUT_OF_SIGHT)
+            outputKeyImages();
     }
-    if (nFrame==startFrameNo && state != NEW)
-        outputKeyImages();
 
     updateState();
-    printf("State : %d %d \n", state, id);
+
+    //printf("State %d : %d \n", id, state);
 }
 void MovingObject::updateState() {
     //printf("updateState\n");
@@ -228,12 +237,13 @@ void MovingObject::updateState() {
     }
     if (com.Z == 0 && state != NEW){ //anyway != then NEW
         state = OUT_OF_SIGHT;
+        xnUserId = 0;
         return;
     }
 
     if (frames.size()!=0) {
         Rect rect = frames[frames.size()-1].getZone();
-        if (rect.top==0 || rect.left==0 || rect.bottom==XN_VGA_Y_RES || rect.right==XN_VGA_X_RES){
+        if (rect.top<5 || rect.left<10 || rect.bottom==(XN_VGA_Y_RES-5) || rect.right==(XN_VGA_X_RES-10) ){
             state = IN_BORDER;
             return;
         }
@@ -273,7 +283,7 @@ bool MovingObject::isInSeperation() {
     }
 
     float evolvWidth = abs(newMetric.width-metric.validWidth)/newMetric.width;
-    printf("\tPourcentage evolv width %f / (old:%f, new:%f, valid:%f)\n", evolvWidth , metric.width, newMetric.width, metric.validWidth);
+    //printf(" evolv width %f / (old:%f, new:%f, valid:%f)\n", evolvWidth , metric.width, newMetric.width, metric.validWidth);
 
     //float dist = getDistance(com, movingObjects[indexUser].getCom());
     //printf("\tDist between com %f\n", dist);1.230761
@@ -532,6 +542,8 @@ void MovingObject::checkMovement() {
 void MovingObject::computeDistance() {
     float distance = 0.0;
     XnPoint3D current;
+    if(frames.size()<=0)
+        return;
     XnPoint3D last = frames[0].getCom();
     for (int i=1;i<frames.size();i++){
         current = frames[i].getCom();
@@ -566,15 +578,19 @@ void MovingObject::resetValidWidthCountDown(){
 }
 
 void MovingObject::toXML(TiXmlElement* sequenceNode) {
-    XnUInt32 endFrameNo;
-    gen.player.TellFrame(gen.depth.GetName(), endFrameNo);
+    if(frames.size()<=0)
+        return;
 
     computeDistance();
     checkMovement();
 
+    int endFrameNo;
+    endFrameNo = frames[frames.size()-1].getId();
+
     //printf("*** moving object xml %d***\n", id);
 
     TiXmlElement * movingObjectNode = new TiXmlElement("movingObject");
+    movingObjectNode->SetAttribute("id", id);
     movingObjectNode->SetAttribute("startFrameNo", startFrameNo);
     movingObjectNode->SetAttribute("endFrameNo", endFrameNo);
     movingObjectNode->SetAttribute("movingObjectType", "");
@@ -606,9 +622,12 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
 
 void MovingObject::outputKeyImages() {
     XnUInt32 nFrame;
-    gen.player.TellFrame(gen.depth.GetName(), nFrame);
-    outputImage(frames[nFrame-startFrameNo].getZone(), file2d);
-    outputDepth(frames[nFrame-startFrameNo].getZone(), file3d);
+    gen.player.TellFrame(gen.image.GetName(), nFrame);
+    Frame f = findFrameById(nFrame);
+    Rect r = f.getZone();
+    //printf("ouput key %d: (%d,%d,%d,%d)\n",xnUserId , r.top,r.right,r.bottom,r.left);
+    outputImage(r, file2d);
+    outputDepth(r, file3d);
 }
 
 
@@ -667,6 +686,7 @@ float MovingObject::computeWidth() {
     }
 
     if(lcom.X<=20 || rcom.X>=(XN_VGA_X_RES-20) ){
+        //printf("METRIC LIMIT WIDTH %d\n", id);
         return -1;
     }
 
@@ -759,7 +779,7 @@ float MovingObject::computeHeight() {
 
 
     if(top.X<=10 || bottom.X>=(XN_VGA_Y_RES-10) ){
-        //printf("METRIC LIMIT HEIGHT %d\n", userId);
+        //printf("METRIC LIMIT HEIGHT %d\n", id);
         return -1;
     }
 
@@ -778,6 +798,15 @@ Metric MovingObject::computeMetrics(XnPoint3D com) {
 
 
     return metric;
+}
+
+Frame MovingObject::findFrameById(int id){
+    Frame* f = 0;
+    for (int i=0;i<frames.size();i++){
+        if(frames[i].getId() == id)
+            return frames[i];
+    }
+    return *f;
 }
 
 /*void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
