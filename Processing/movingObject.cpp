@@ -18,7 +18,6 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
 {
     next_id++;
     id = next_id;
-    //printf("MovingObject(%d, %d)\n", id, xnUserId);
     std::ostringstream file1, file2;
     file1 << dir << "/2D/keyimage-" << id << ".png";
     file2 << dir << "/3D/keyimage-" << id << ".png";
@@ -26,7 +25,6 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     file3d = file2.str();
     gen.player.TellFrame(gen.image.GetName(), startFrameNo);
     stableHeight = 5;
-    validWidthCount = MAX_VALID_WIDTH_COUNT;
     stateVars.inSeperationCount = MAX_VALID_WIDTH_COUNT;
     state = NEW;
     metric.height = 0;
@@ -61,15 +59,6 @@ void MovingObject::setState(ObjectState s){
     state=s;
 }
 
-void MovingObject::outputImage(Rect rect) {
-    XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
-    gen.player.TellFrame(gen.depth.GetName(), nFrame);
-
-    std::ostringstream file;
-    file << "snapshot-" << nFrame << "-" << id << "-rgb.png";
-    printf("Rect %d (%d;%d;%d;%d)\n", id, rect.top, rect.right, rect.bottom, rect.left);
-    outputImage(rect, file.str());
-}
 void MovingObject::outputImage(Rect rect, std::string file) {
     //compute the inside rect to draw rectangle
     Rect rect2;
@@ -108,7 +97,6 @@ void MovingObject::outputImage(Rect rect, std::string file) {
     cvSetData(rgbimg,ucpImage, 640*3);
     cvCvtColor(rgbimg,rgbimg,CV_RGB2BGR);
 
-    //cvSaveImage(file.str().c_str(),rgbimg);
     cv::imwrite(file, rgbimg);
 
     chmod(file.c_str(), 0777);
@@ -116,17 +104,10 @@ void MovingObject::outputImage(Rect rect, std::string file) {
     cvReleaseImageHeader(&rgbimg);
     //delete[] ucpImage;
 }
-void MovingObject::outputDepth(Rect rect) {
-    XnUInt32 nFrame;  //TODO: checkout on the nFrame in this class
-    gen.player.TellFrame(gen.depth.GetName(), nFrame);
 
-    std::ostringstream file;
-    file << "snapshot-" << nFrame << "-" << id << "-depth.png";
-
-    outputDepth(rect, file.str());
-}
 void MovingObject::outputDepth(Rect rect, std::string file) {
-    double alpha = 255.0/2048.0;
+    double alpha = 255.0/2048.0;    //gray alpha
+    //compute the inside rect to draw rectangle
     Rect rect2;
     rect2.top    = rect.top+2;
     rect2.right  = rect.right-2;
@@ -135,10 +116,8 @@ void MovingObject::outputDepth(Rect rect, std::string file) {
 
     //Get pointer on depthMap and prepare matrix to get the cut depth image
     const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
-    //printf("cvCreateMat\n");
     CvMat* depthMetersMat   = cvCreateMat(480, 640, CV_8UC1);
 
-    //printf("fillup\n");
     //Fillup the whole depth image
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
@@ -165,14 +144,8 @@ void MovingObject::outputDepth(Rect rect, std::string file) {
 }
 
 void MovingObject::update(Metric newMetric) {
-    //printf("update movingObject(%d)\n", id);
-
-
-    XnUInt32 nFrame3D, nFrame2D;
-    gen.player.TellFrame(gen.depth.GetName(), nFrame3D);
+    XnUInt32 nFrame2D;
     gen.player.TellFrame(gen.image.GetName(), nFrame2D);
-
-    //printf("update %d nframe:%d %d\n", id, nFrame3D, nFrame2D);
 
     xn::SceneMetaData sceneMetaData;
     xn::DepthMetaData depthMetaData;
@@ -185,8 +158,7 @@ void MovingObject::update(Metric newMetric) {
     gen.user.GetCoM(xnUserId, com);
 
 
-
-    if (com.Z > 0.001){ //TODO: is that correct, working ?????
+    if (com.Z > 0.001){ //is that correct, working
         Rect rect;
         rect.top    = XN_VGA_Y_RES+1;
         rect.right  = -1;
@@ -207,7 +179,6 @@ void MovingObject::update(Metric newMetric) {
 
         //computeComColor();
 
-
         float evolvHeight = abs(metric.height-this->metric.height)/metric.height;
         if (evolvHeight<0.1 && stableHeight>0){
             stableHeight--;
@@ -220,16 +191,13 @@ void MovingObject::update(Metric newMetric) {
         }
 
         //metric = newMetric;
-        if (nFrame3D==startFrameNo && state != NEW && state != OUT_OF_SIGHT)
+        if (nFrame2D==startFrameNo && state != NEW && state != OUT_OF_SIGHT)
             outputKeyImages();
     }
 
     updateState();
-
-    //printf("State %d : %d \n", id, state);
 }
 void MovingObject::updateState() {
-    //printf("updateState\n");
     if (state == SEPERATED) return;
 
     if ((com.Z < 0.001) && state == NEW){ //stay NEW
@@ -274,9 +242,6 @@ bool MovingObject::isInSeperation() {
     if(newMetric.height==0.0 || newMetric.width==0.0)
         return false;
 
-    //float evolvHeight = abs(newMetric.height-metric.height)/newMetric.height;
-    //printf("Object %d:\n\tPourcentage evolv height %f\n", indexUser, evolvHeight);
-
     if (newMetric.width<0){
         newMetric.height = metric.height;
         newMetric.width = metric.width;
@@ -284,12 +249,6 @@ bool MovingObject::isInSeperation() {
 
     float evolvWidth = abs(newMetric.width-metric.validWidth)/newMetric.width;
     //printf(" evolv width %f / (old:%f, new:%f, valid:%f)\n", evolvWidth , metric.width, newMetric.width, metric.validWidth);
-
-    //float dist = getDistance(com, movingObjects[indexUser].getCom());
-    //printf("\tDist between com %f\n", dist);1.230761
-
-    //if (evolvHeight>0.6 || evolvWidth>0.6){
-
 
     metric.height = newMetric.height;
     metric.width = newMetric.width;
@@ -345,11 +304,9 @@ void MovingObject::computeComColor(){
         }
 
         double dist = ColourDistance(comColor, average);
-
         //printf("color dist with special is : %f\n", dist);
 
         dist = sqrt(pow(comColor.nRed-average.nRed,2) + pow(comColor.nGreen-average.nGreen,2) + pow(comColor.nBlue-average.nBlue,2));
-
         //printf("color dist with normal is : %f\n", dist);
 
         comColor.nRed  = average.nRed;
@@ -357,15 +314,6 @@ void MovingObject::computeComColor(){
         comColor.nBlue  = average.nBlue;
 
         //printf("Com color : (%d, %d, %d)\n", average.nRed, average.nGreen, average.nBlue);
-
-        /*
-        Rect rect;
-        rect.bottom    = XN_VGA_Y_RES;
-        rect.left      = 0;
-        rect.top       = 0;
-        rect.right     = XN_VGA_X_RES;
-        outputImage(rect);
-        */
 
         //if (dist>50){
             Rect rect;
@@ -386,22 +334,7 @@ void MovingObject::computeComColor(){
             {
                 std::cout << "Exception while writting file : " << e.err << std::endl;
             }
-
         //}
-
-        /*
-        for (int y=0; y<XN_VGA_Y_RES; y++){
-            for(int x=0;x<XN_VGA_X_RES;x++){
-                if (userPix[y * XN_VGA_X_RES + x ] == id) {
-                    if (y<rect.top) rect.top=y;
-                    if (x>rect.right) rect.right=x;
-                    if (y>rect.bottom) rect.bottom=y;
-                    if (x<rect.left) rect.left=x;
-                }
-            }
-        }*/
-
-
     }
 }
 
@@ -409,82 +342,6 @@ void MovingObject::computeComColor(){
 std::vector<Frame> MovingObject::getFrames(){
     return frames;
 }
-/*
-void MovingObject::computeMetrics() {
-    xn::SceneMetaData sceneMetaData;
-    gen.user.GetUserPixels(id, sceneMetaData);
-    unsigned short *userPix = (unsigned short*)sceneMetaData.Data();
-
-    XnPoint3D com;
-    gen.user.GetCoM(id, com);
-    XnPoint3D com2, com3;
-    gen.depth.ConvertRealWorldToProjective(1, &com, &com2);
-    gen.depth.ConvertProjectiveToRealWorld(1, &com, &com3);
-    const XnDepthPixel* pDepthMap = gen.depth.GetDepthMap();
-    if (com.Z != 0) {
-        //printf("real world : (%f, %f, %f)\n", com.X, com.Y, com.Z);
-        //printf("projective world : (%d, %d, %f)\n", (int)com2.X, (int)com2.Y, com2.Z);
-        //printf("other world : (%d, %d, %f)\n", com3.X, com3.Y, com3.Z);
-        int i = (int)com2.X;
-        int j = (int)com2.Y;
-
-        //computes the with of the object on the center of gravity
-        XnPoint3D lcom;
-        XnPoint3D rcom;
-        int nbOther = 1;
-        bool found = false;
-        for (int y=j; y<XN_VGA_Y_RES; y++){
-            for(int x=i;x<XN_VGA_X_RES;x--){
-                if (nbOther==0){
-                    lcom.X = x+1;
-                    lcom.Y = y;
-                    lcom.Z = pDepthMap[y * XN_VGA_X_RES + x + 1];
-                    found = true;
-                    break;
-                }
-                if (userPix[y * XN_VGA_X_RES + x ] != id) {
-                    nbOther--;
-                }
-            }
-            if (found) break;
-        }
-        nbOther = 1;
-        found = false;
-        for (int y=j; y<XN_VGA_Y_RES; y++){
-            for(int x=i;x<XN_VGA_X_RES;x++){
-                if (nbOther==0){
-                    rcom.X = x-1;
-                    rcom.Y = y;
-                    rcom.Z = pDepthMap[y * XN_VGA_X_RES + x-1];
-                    found = true;
-                    break;
-                }
-                if (userPix[y * XN_VGA_X_RES + x ] != id) {
-                    nbOther--;
-                }
-            }
-            if (found) break;
-        }
-        gen.depth.ConvertProjectiveToRealWorld(1, &lcom, &lcom);
-        gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom);
-        //if(lcom.X > 0.1 && rcom.X > 0.1){
-            printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
-            printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
-            float dist = getDistance(lcom, rcom);
-            printf("real world %d distance : %f\n", id, dist);
-
-        this->com.X = com2.X;
-        this->com.Y = com2.Y;
-        this->com.Z = com2.Z;
-
-    }
-}
-
-float MovingObject::getHeight() {
-
-    return height;
-}
-*/
 
 void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
@@ -499,8 +356,6 @@ void MovingObject::checkMovement() {
         float z = frames[i].getCom().Z; //get the current human depth
         if(z < 10000.0 && z > 0.1){   //possible value
             int move;
-            //printf("\tcurrent move:%d newChange:%d\n", currentMovement, newChange);
-            //printf("\tz:%f last:%f dif:%f\n", z, lastZ, (lastZ - z));
             if(lastZ - z > 0){  //Difference between 2 frames
                 move = 2;
                 if(currentMovement == move){
@@ -519,7 +374,6 @@ void MovingObject::checkMovement() {
                 }
             }
             if ( abs(balanceCount)==3){ //if movement seems stable
-                //printf("\tcurrent balanceCount:%d newChange:%d\n", balanceCount, newChange);
                 if (firstChange){
                     firstChange = false;
                 }else{
@@ -527,7 +381,6 @@ void MovingObject::checkMovement() {
                 }
             }
             if(newChange || i==(frames.size()-1)){  //if changement of direction or end of frames
-                //printf("new change. frames (%d to %d) lastz :%f (%f - %f)\n",startFrameCurrentMovement, frames[i].getId()-1,(lastZ- z), lastZ, z);
                 //Add new event with information
                 events.push_back(Event(startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str()));
                 startFrameCurrentMovement = frames[i].getId();
@@ -558,25 +411,6 @@ float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
     return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
 }
 
-bool MovingObject::isValidWidthCountDown(){
-    //printf("\tvalue:%d\n", validWidthCount);
-    if(--validWidthCount < 0){
-        validWidthCount = MAX_VALID_WIDTH_COUNT;
-        return true;
-    }
-
-    return false;
-}
-
-void MovingObject::resetValidWidth(){
-    metric.validWidth = 0;
-    validWidthCount = MAX_VALID_WIDTH_COUNT;
-}
-
-void MovingObject::resetValidWidthCountDown(){
-    validWidthCount = MAX_VALID_WIDTH_COUNT;
-}
-
 void MovingObject::toXML(TiXmlElement* sequenceNode) {
     if(frames.size()<=0)
         return;
@@ -586,8 +420,6 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
 
     int endFrameNo;
     endFrameNo = frames[frames.size()-1].getId();
-
-    //printf("*** moving object xml %d***\n", id);
 
     TiXmlElement * movingObjectNode = new TiXmlElement("movingObject");
     movingObjectNode->SetAttribute("id", id);
@@ -625,13 +457,9 @@ void MovingObject::outputKeyImages() {
     gen.player.TellFrame(gen.image.GetName(), nFrame);
     Frame f = findFrameById(nFrame);
     Rect r = f.getZone();
-    //printf("ouput key %d: (%d,%d,%d,%d)\n",xnUserId , r.top,r.right,r.bottom,r.left);
     outputImage(r, file2d);
     outputDepth(r, file3d);
 }
-
-
-
 
 float MovingObject::computeWidth() {
     xn::SceneMetaData sceneMetaData;
@@ -651,8 +479,7 @@ float MovingObject::computeWidth() {
     int nbOther = 1;
 
     float f = pDepthMap[j * XN_VGA_X_RES + i];
-    //printf("com.Z : %f pdepthZ : %f\n", com.Z, f);
-    if(f<0.1){ //TODO: f user pix or 0
+    if(f<0.1){ // wrong data
         return -1;
     }
     lcom.X = 0;
@@ -685,28 +512,9 @@ float MovingObject::computeWidth() {
         }
     }
 
-    if(lcom.X<=20 || rcom.X>=(XN_VGA_X_RES-20) ){
-        //printf("METRIC LIMIT WIDTH %d\n", id);
+    if(lcom.X<=20 || rcom.X>=(XN_VGA_X_RES-20) ){   //Border case
         return -1;
     }
-
-
-    /*
-    Rect rect;
-    rect.top       = rcom.Y-5;
-    rect.right     = rcom.X;
-    rect.bottom    = rcom.Y+5;
-    rect.left      = lcom.X;
-
-    XnUInt32 nFrame;
-    gen.player.TellFrame(gen.depth.GetName(), nFrame);
-    std::ostringstream file2d;
-    file2d << dir << "/2D/metric-" << nFrame << ".png";
-    outputImage(rect, file2d);
-    std::ostringstream file3d;
-    file3d << dir << "/3D/metric-" << nFrame << ".png";
-    outputDepth(rect, file3d);
-    */
 
     XnPoint3D lcom2;
     XnPoint3D rcom2;
@@ -715,11 +523,7 @@ float MovingObject::computeWidth() {
     gen.depth.ConvertProjectiveToRealWorld(1, &rcom, &rcom2);
 
     if(lcom2.Z > 0.1 && rcom2.Z > 0.1){
-        //printf("real world %d left : (%f, %f, %f)\n", id, lcom.X, lcom.Y, lcom.Z);
-        //printf("real world %d right : (%f, %f, %f)\n", id, rcom.X, rcom.Y, rcom.Z);
-        //float dist = getDistance(lcom, rcom);
         return rcom2.X - lcom2.X;
-        //printf("real world %d distance : %f\n", id, dist);
     }else{
         printf("ERROR METRIC\n");
         printf("%d real world right : (%f, %f, %f)\n", xnUserId, rcom.X, rcom.Y, rcom.Z);
@@ -774,28 +578,19 @@ float MovingObject::computeHeight() {
             }
          }
      }
-    //printf("Top %d : (%f, %f, %f)\n", id, top.X, top.Y, top.Z);
-    //printf("Bottom %d : (%f, %f, %f)\n", id, bottom.X, bottom.Y, bottom.Z);
 
-
-    if(top.X<=10 || bottom.X>=(XN_VGA_Y_RES-10) ){
-        //printf("METRIC LIMIT HEIGHT %d\n", id);
+    if(top.X<=10 || bottom.X>=(XN_VGA_Y_RES-10) ){  //Border case
         return -1;
     }
 
     gen.depth.ConvertProjectiveToRealWorld(1, &top, &top);
     gen.depth.ConvertProjectiveToRealWorld(1, &bottom, &bottom);
 
-    //float dist = getDistance(top, bottom);
-    //printf("real world %d height with dist : %f height with diff : %f\n", id, dist, top.Y-bottom.Y);
-
     return top.Y-bottom.Y;
 }
 
 Metric MovingObject::computeMetrics(XnPoint3D com) {
     Metric metric;
-
-
 
     return metric;
 }
@@ -809,22 +604,4 @@ Frame MovingObject::findFrameById(int id){
     return *f;
 }
 
-/*void MovingObject::outputImagesKey(std::ostringstream& file2d, std::ostringstream& file3d) {
-    XnUInt32 no;
-
-
-    int key = frames[frames.size()/2].getId();
-    printf("key: %d\n", key);
-    gen.player.SeekToFrame(gen.depth.GetName(), key, XN_PLAYER_SEEK_SET);
-    gen.player.TellFrame(gen.depth.GetName(), no);
-    printf("seek: %d\n", no);
-
-    outputImage(frames[frames.size()/2].getZone(), file2d);
-
-    //outputImage(frames[frames.size()/2].getZone());
-    //outputDepth(rect);
-
-    gen.player.SeekToFrame(gen.depth.GetName(), no, XN_PLAYER_SEEK_SET);
-}
-*/
 

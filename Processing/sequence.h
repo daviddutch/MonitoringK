@@ -1,3 +1,10 @@
+/**
+ * @file sequence.h
+ * @brief Header file of the Sequence class
+ * @author David Dutch, Vincent Ischi
+ * @version 1.0
+ *
+ */
 #ifndef SEQUENCE_H
 #define SEQUENCE_H
 
@@ -9,21 +16,48 @@
 #include <qdom.h>
 #include "defs.h"
 
+/**
+ * @class Sequence
+ * @brief Class that describe Sequence
+ *
+ *  A sequence is a part of movie where there is one or more user inside
+ */
 class Sequence
 {
 public:
+    /**
+     * @brief Constructor
+     *
+     * Constructor a new sequence
+     *
+     * @param generators
+     * @param directory to save data
+     */
     Sequence(Generators& gen, std::string dir);
+
+    /**
+     * @brief update sequence
+     *
+     * Called each frame
+     *
+     */
     void update();
+
+    /**
+     * @brief Adds the class content in the xml node
+     *
+     * Adds the class content in the xml node. The node should be of movieNode type
+     *
+     * @param The movieNode node
+     */
     void toXML(TiXmlElement* movieNode);
+
 private:
-    XnUInt32 startFrame;
-    Generators& gen;
-    std::string dir;
-    std::vector<MovingObject> movingObjects;
-    XnPoint3D getComByUser(int id);
-    bool isSameObject(int index, XnPoint3D com, Metric metric);
-    float getDistance(XnPoint3D p1, XnPoint3D p2);
-    Metric computeMetrics(XnUserID userId, XnPoint3D com);
+    XnUInt32 startFrame;                        /*!< No start frame */
+    Generators& gen;                            /*!< Generators */
+    std::string dir;                            /*!< directory to save data */
+    std::vector<MovingObject> movingObjects;    /*!< list of movingObjects */
+
 };
 
 #endif // SEQUENCE_H

@@ -39,7 +39,6 @@ public:
      */
     ~Event();
 
-
     /**
      * @brief Adds the class content in the xml node
      *

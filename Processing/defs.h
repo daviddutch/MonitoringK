@@ -78,6 +78,12 @@ struct StateVars {
 
 };
 
-
+/**
+ * @enum ObjectState
+ * @brief variable describing moving object state
+ *
+ * variable describing moving object state:
+ * NEW, IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED
+ */
 enum ObjectState { NEW, IN_SIGHT, OUT_OF_SIGHT, IN_BORDER, IN_SEPERATION, SEPERATED };
 #endif // DEFS_H

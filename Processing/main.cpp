@@ -24,8 +24,8 @@ int main(int argc, char **argv) {
         processor = Processor::getInstance ();
         processor->start(argc, argv);
     }else{
-        //TODO changer le texte
-        printf("\nProcessor usage : processor [ONI file]* \n");
+        printf("\nProcessor usage : Processing [ONI file]* [display result]\n");
+        printf("       example : recorder 2011_03_29[15_14_59].oni 1\n");
         printf("       example : recorder 2011_03_29[15_14_59].oni\n");
         return 0;
     }

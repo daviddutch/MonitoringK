@@ -38,13 +38,18 @@ Processor* Processor::getInstance() {
 }
 
 int Processor::start(int argc, char **argv) {
-    fileName = argv[1];
+    fileName = argv[1];         //ONI file
+    bool isDisplay = false;     //display or not the depth scene
+    if(argc>2)
+        isDisplay=true;
+
+    //get the name of file without path
     int pos = fileName.find_last_of("/") +1;
     if (pos < 0 ) pos = 0;
     fileName = fileName.substr(pos);
     dateStart = fileName.substr(0,fileName.find("."));
 
-    //create dire for media
+    //create directory for media
     instance->dir = "movieData/"+fileName.substr(0,fileName.find_last_of("."));
     mkdir("movieData", 0777);
     mkdir((dir).c_str(), 0777);
@@ -57,22 +62,7 @@ int Processor::start(int argc, char **argv) {
     xn::UserGenerator  g_UserGenerator;
     xn::ImageGenerator g_image;
 
-
-
-
-
-
-
-
-////http://groups.google.com/group/openni-dev/browse_thread/thread/59fbc123ef632528
-
-
-
-
-
-
-
-
+    //Init context and all Node/Generator
     rc = context.Init();
     CHECK_RC(rc, "Init");
 
@@ -110,12 +100,7 @@ int Processor::start(int argc, char **argv) {
     } else {
         printf("AlternativeViewPoint not supported\n");
     }
-    /*
-    rc = g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_image);
-    if(rc)
-            printf("Failed to match Depth and RGB points of view: %s\n", xnGetStatusString(rc));
 
-    */
     g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 
     //Init Player
@@ -130,25 +115,21 @@ int Processor::start(int argc, char **argv) {
                 }
         }
     }else{
-        printf("Player: %s\n", xnGetStatusString(rc));
+        printf("Player error: %s\n", xnGetStatusString(rc));
     }
 
-    /*XnStatus nRetVal = context.SetGlobalMirror(true);
-    if (nRetVal != XN_STATUS_OK)
-    {
-            printf("Failed to set global mirror: %s\n", xnGetStatusString(nRetVal));
-    }
-    */
-
+    //Create a Generators contains all generators
     gen = new Generators(g_UserGenerator, g_DepthGenerator, g_image, player);
 
-
     strNodeName = g_image.GetName();
-    createXML();
 
+    createXML();    //Create a XMLDocument
+
+    //Start the Nodes/Generators
     rc = context.StartGeneratingAll();
     CHECK_RC(rc, "StartGenerating");
 
+    //Set callbacks functions : NewUser & LostUser
     XnCallbackHandle hUserCBs;
     g_UserGenerator.RegisterUserCallbacks(Processor::NewUser, Processor::LostUser, NULL, hUserCBs);
 
@@ -156,20 +137,20 @@ int Processor::start(int argc, char **argv) {
     XnUInt32 nFrame, nFrameTot;
     instance->gen->player.GetNumFrames(instance->strNodeName, nFrameTot);
 
-
-    if (true){
+    //Loop each frames with windows output or not
+    if (!isDisplay){
         while(nFrame != nFrameTot -2){
-            //printf("start while\n");
+            //update current frame id
             instance->gen->player.TellFrame(instance->strNodeName,nFrame);
             // Read next available data
             instance->context.WaitAndUpdateAll();
-            //printf("between\n");
+            //Update sequence if there is someone in the scene
             if (instance->hasUserInSight)
                 instance->sequence->update();
-            //printf("end while\n");
         }
         CleanupExit();
     }else{
+        //Start the GL to display Depth image
         glInit(&argc, argv);
         glutMainLoop();
     }
@@ -185,7 +166,7 @@ void Processor::createXML() {
     movieNode = new TiXmlElement("kinectMovie");
     movieNode->SetAttribute("id", fileName.substr(0,fileName.find_last_of(".")).c_str());
     movieNode->SetAttribute("totNumberFrames", nFrameTot);
-    movieNode->SetAttribute("framesPerSeconde", 24); //TODO: find fps
+    movieNode->SetAttribute("framesPerSeconde", 24);
     movieNode->SetAttribute("startDateTime", dateStart.c_str());
     movieNode->SetAttribute("endDateTime", 0);
     doc.LinkEndChild(movieNode);
@@ -204,20 +185,22 @@ void Processor::writeXML() {
 }
 
 void XN_CALLBACK_TYPE Processor::NewUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
-    //printf("NewUser %d\n", user);
+    //If there is no one in the scene, create a new sequence
     if (!instance->hasUserInSight){
         instance->hasUserInSight = true;
         instance->sequence = new Sequence((*(instance->gen)), instance->dir);
     }
+    //if not add a user in the sequence
     instance->nUser++;
 }
 void XN_CALLBACK_TYPE Processor::LostUser(xn::UserGenerator& generator, XnUserID user, void* pCookie) {
-        //printf("Lost user %d\n", user);
-        instance->nUser--;
-        if (instance->nUser==0) {
-            instance->sequence->toXML(instance->movieNode);
-            instance->hasUserInSight = false;
-        }
+    //sub a user in the sequence
+    instance->nUser--;
+    //If it was the last, close the sequence and write to XML
+    if (instance->nUser==0) {
+        instance->sequence->toXML(instance->movieNode);
+        instance->hasUserInSight = false;
+    }
 }
 
 void Processor::CleanupExit() {
@@ -230,30 +213,11 @@ void Processor::CleanupExit() {
 
     exit (1);
 }
-void Processor::DrawProjectivePoints(XnPoint3D& ptIn, int width, double r, double g, double b) {
-        static XnFloat pt[3];
 
-        pt[0] = ptIn.X;
-        pt[1] = ptIn.Y;
-        pt[2] = 0;
-        glColor4f(r,
-                g,
-                b,
-                1.0f);
-        glPointSize(width);
-        glVertexPointer(3, GL_FLOAT, 0, pt);
-        glDrawArrays(GL_POINTS, 0, 1);
-
-        glFlush();
-
-}
-
-// this function is called each frame
 void Processor::glutDisplay (void) {
         XnUInt32 nFrame, nFrameTot;
         instance->gen->player.GetNumFrames(instance->strNodeName,nFrameTot);
         instance->gen->player.TellFrame(instance->strNodeName,nFrame);
-
 
         //finish at end of movie
         if(nFrame == nFrameTot -1){
@@ -290,7 +254,6 @@ void Processor::glutDisplay (void) {
             instance->context.WaitAndUpdateAll();
         }
         // Process the data
-        //DRAW
         instance->gen->depth.GetMetaData(depthMD);
         instance->gen->user.GetUserPixels(0, sceneMD);
         DrawDepthMap(depthMD, sceneMD, 0);
@@ -299,16 +262,10 @@ void Processor::glutDisplay (void) {
             if (instance->hasUserInSight) instance->sequence->update();
         }
         glutSwapBuffers();
-
 }
-
 
 void Processor::glutIdle (void)
 {
-        //if (g_bQuit) {
-        //        CleanupExit();
-        //}
-
         // Display the frame
         glutPostRedisplay();
 }
