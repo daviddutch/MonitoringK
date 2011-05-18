@@ -15,7 +15,6 @@
 #include <cv.h>
 #include <cxcore.h>
 #include <highgui.h>
-#include <vlc/plugins/vlc_fourcc.h>
 
 
 using namespace cv;
@@ -95,20 +94,12 @@ int main(int argc, char *argv[])
     writer=cvCreateVideoWriter(fileNameBuffer,CV_FOURCC('P','I','M','1'),
                                     fps,cvSize(frameW,frameH),isColor);
 
-    //CV_FOURCC('P','I','M','1')
-    //CV_FOURCC('D','I','V','3')
-    //CV_FOURCC('D','I','V','X')
-    //CV_FOURCC('M', 'P', '4', '2')
-    //VLC_FOURCC('V','P','8','0')
-
     while (TRUE)
     {
         // Update to next frame
         nRetVal = g_Context.WaitOneUpdateAll(g_ImageGenerator);
 
         CHECK_RC(nRetVal, "WaitOneUpdateAll");
-
-        //printf(".");
 
         const XnRGB24Pixel* pImage = g_ImageGenerator.GetRGB24ImageMap();
         XnRGB24Pixel ucpImage[XN_VGA_Y_RES*XN_VGA_X_RES];
