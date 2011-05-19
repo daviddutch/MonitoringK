@@ -9,14 +9,12 @@
 #include "SceneDrawer.h"
 #include <cv.h>
 #include <cxcore.h>
-#include <cvaux.h>
 #include <highgui.h>
 #include <iostream>
 #include <string>
 #include <QStringList>
 #include <qfile.h>
 #include <QTextStream>
-#include <qdom.h>
 #include <string>
 #include <stdlib.h>
 
@@ -174,10 +172,10 @@ void Processor::createXML() {
 
 void Processor::writeXML() {
     //Write XML file
-    char xmlFileName [50];
-    char buffer[50];
+    char xmlFileName [255];
+    char buffer[255];
     sprintf (xmlFileName, "%s.xml", dateStart.c_str());
-    getcwd(buffer, 100);
+    getcwd(buffer, 255);
 
     std::ostringstream file;
     file << buffer << "/" << dateStart.c_str() << ".xml";

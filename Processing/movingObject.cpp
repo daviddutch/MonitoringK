@@ -3,7 +3,6 @@
 #include <string>
 #include <cv.h>
 #include <cxcore.h>
-#include <cvaux.h>
 #include <highgui.h>
 #include "tinyxml.h"
 

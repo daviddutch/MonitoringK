@@ -1,5 +1,4 @@
 #include "sequence.h"
-#include "qdom.h"
 #include <math.h>
 
 Sequence::Sequence(Generators& generators, std::string d) :

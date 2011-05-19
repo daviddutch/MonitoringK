@@ -1,5 +1,4 @@
 #include "frame.h"
-#include "qdom.h"
 
 Frame::Frame(int frame, Rect zone, XnPoint3D com)
 {

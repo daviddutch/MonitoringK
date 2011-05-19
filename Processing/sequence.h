@@ -13,7 +13,6 @@
 #include <XnCppWrapper.h>
 #include <map>
 #include "movingObject.h"
-#include <qdom.h>
 #include "defs.h"
 
 /**
