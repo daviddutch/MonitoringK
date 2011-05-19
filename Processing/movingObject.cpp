@@ -484,12 +484,9 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
 }
 
 void MovingObject::outputKeyImages() {
-    XnUInt32 nFrame;
-    gen.player.TellFrame(gen.image.GetName(), nFrame);
-    Frame f = findFrameById(nFrame);
-    Rect r = f.getZone();
-    outputImage(r, file2d);
-    outputDepth(r, file3d);
+    Rect rect = frames.back().getZone();
+    outputImage(rect, file2d);
+    outputDepth(rect, file3d);
 }
 
 float MovingObject::computeWidth() {
@@ -624,15 +621,6 @@ Metric MovingObject::computeMetrics(XnPoint3D com) {
     Metric metric;
 
     return metric;
-}
-
-Frame MovingObject::findFrameById(int id){
-    Frame* f = 0;
-    for (int i=0;i<frames.size();i++){
-        if(frames[i].getId() == id)
-            return frames[i];
-    }
-    return *f;
 }
 
 void MovingObject::computeObjectType() {

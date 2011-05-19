@@ -282,14 +282,6 @@ private:
     bool isInSeperation();
 
     /**
-     * @brief get the frame by id frame
-     *
-     * get the frame by id frame
-     *
-     */
-    Frame findFrameById(int id);
-
-    /**
      * @brief Determines the type of the moving object
      *
      * Determines the type of the moving object. Human or other
