@@ -20,6 +20,7 @@
 #include "tinyxml.h"
 #include <iostream>
 #include <string>
+#include "cv.h"
 
 
 /**
@@ -42,6 +43,7 @@ public:
      */
     MovingObject(XnUserID pId, Generators& generators, std::string dir);
 
+    static void init();
     /**
      * @brief get user id supply by OpenNI
      *
@@ -145,6 +147,10 @@ public:
 
 private:
     static int next_id;         /*!< user id available (global) */
+    static CvMemStorage* storage; /*!< Create memory for calculations */
+    static CvHaarClassifierCascade* cascade; /*!< Create a new Haar classifier */
+
+
     int id;                     /*!< current user id */
     XnUserID xnUserId;          /*!< user id by OpenNI */
     std::string dir;            /*!< directory to save key images */
@@ -160,6 +166,9 @@ private:
     int stableHeight;           /*!< stable value of Height */
     StateVars stateVars;        /*!< Statistic variables */
     ObjectState state;          /*!< current state of MovingObject */
+    std::string objectType;     /*!< Type of the current object (human,..) */
+    int isObjectHumanCount;     /*!< Count how many times the object is found as a human */
+    int detectTypeCount;        /*!< Number of times the type of the moving object has tried to be detected */
 
     /**
      * @brief save key images
@@ -279,6 +288,22 @@ private:
      *
      */
     Frame findFrameById(int id);
+
+    /**
+     * @brief Determines the type of the moving object
+     *
+     * Determines the type of the moving object. Human or other
+     *
+     */
+    void computeObjectType();
+
+    /**
+     * @brief Tries to find out if the current object is a human
+     *
+     * Tries to find out if the current object is a human
+     *
+     */
+    bool isObjectHuman();
 };
 
 #endif // MOVINGOBJECT_H

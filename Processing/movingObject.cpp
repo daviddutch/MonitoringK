@@ -9,6 +9,8 @@
 using namespace std;
 
 int MovingObject::next_id = 0;
+CvMemStorage* MovingObject::storage = 0;
+CvHaarClassifierCascade* MovingObject::cascade = 0;
 
 MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) :
     gen(generators),
@@ -29,7 +31,26 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     metric.height = 0;
     metric.width = 0;
     metric.validWidth = 0;
+    isObjectHumanCount = 0;
+    detectTypeCount = 0;
+    objectType = "Other";
+
 }
+void MovingObject::init() {
+    // Load the HaarClassifierCascade
+    cascade = (CvHaarClassifierCascade*)cvLoad("haarcascade_frontalface_alt.xml", 0, 0, 0 );
+
+    // Check whether the cascade has loaded successfully. Else report and error and quit
+    if( !cascade )
+    {
+        fprintf( stderr, "ERROR: Could not load classifier cascade\n" );
+        return;
+    }
+
+    // Allocate the memory storage
+    storage = cvCreateMemStorage(0);
+}
+
 bool MovingObject::operator==(const MovingObject &movingObject) const {
     return movingObject.xnUserId == this->xnUserId;
 }
@@ -157,7 +178,7 @@ void MovingObject::update(Metric newMetric) {
     gen.user.GetCoM(xnUserId, com);
 
 
-    if (com.Z > 0.001){ //is that correct, working
+    if (com.Z > 0.001){ //is the object on the frame
         Rect rect;
         rect.top    = XN_VGA_Y_RES+1;
         rect.right  = -1;
@@ -175,6 +196,8 @@ void MovingObject::update(Metric newMetric) {
             }
         }
         frames.push_back(Frame(nFrame2D, rect, com));
+
+        computeObjectType();
 
         //computeComColor();
 
@@ -257,15 +280,6 @@ bool MovingObject::isInSeperation() {
     }
     return false;
 }
-
-//Source : http://www.compuphase.com/cmetric.htm
-double ColourDistance(XnRGB24Pixel c1, XnRGB24Pixel c2) {
-  long rmean = ( (long)c1.nRed + (long)c2.nRed ) / 2;
-  long r = (long)c1.nRed - (long)c2.nRed;
-  long g = (long)c1.nGreen - (long)c2.nGreen;
-  long b = (long)c1.nBlue - (long)c2.nBlue;
-  return sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
-}
 //TODO: checkout on x and y out of the frame (segmentation fault)
 void MovingObject::computeComColor(){
     XnPoint3D com;
@@ -302,10 +316,7 @@ void MovingObject::computeComColor(){
 
         }
 
-        double dist = ColourDistance(comColor, average);
-        //printf("color dist with special is : %f\n", dist);
-
-        dist = sqrt(pow(comColor.nRed-average.nRed,2) + pow(comColor.nGreen-average.nGreen,2) + pow(comColor.nBlue-average.nBlue,2));
+        float dist = sqrt(pow(comColor.nRed-average.nRed,2) + pow(comColor.nGreen-average.nGreen,2) + pow(comColor.nBlue-average.nBlue,2));
         //printf("color dist with normal is : %f\n", dist);
 
         comColor.nRed  = average.nRed;
@@ -445,7 +456,7 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
     movingObjectNode->SetAttribute("id", id);
     movingObjectNode->SetAttribute("startFrameNo", startFrameNo);
     movingObjectNode->SetAttribute("endFrameNo", endFrameNo);
-    movingObjectNode->SetAttribute("movingObjectType", "");
+    movingObjectNode->SetAttribute("movingObjectType", objectType.c_str());
     movingObjectNode->SetAttribute("keyImage2d", file2d.c_str());
     movingObjectNode->SetAttribute("keyImage3d", file3d.c_str());
     sequenceNode->LinkEndChild(movingObjectNode);
@@ -622,6 +633,126 @@ Frame MovingObject::findFrameById(int id){
             return frames[i];
     }
     return *f;
+}
+
+void MovingObject::computeObjectType() {
+    detectTypeCount++;
+    if (detectTypeCount>200) return;
+    if (isObjectHumanCount<10 && isObjectHuman()) {
+        isObjectHumanCount++;
+    }
+    if (isObjectHumanCount==10) {
+        objectType = "Human";
+    }
+
+}
+bool MovingObject::isObjectHuman() {
+    Rect rect = frames.back().getZone();
+
+    //Make a copy of the complete ImageMap
+    const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
+    XnRGB24Pixel ucpImage[XN_VGA_Y_RES*XN_VGA_X_RES];
+
+    //Fillup the whole image
+    for (int y=0; y<XN_VGA_Y_RES; y++) {
+        for(int x=0;x<XN_VGA_X_RES;x++) {
+            if (y>=rect.top && y<=rect.bottom && x>=rect.left && x<=rect.right) { //is it inside the rectangle containing the person
+                ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
+                ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
+                ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
+            } else {
+                ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
+                ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
+                ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
+            }
+        }
+    }
+
+    int EXPAND_IMAGE = 20;
+    rect.top    = rect.top    > EXPAND_IMAGE ? rect.top-EXPAND_IMAGE    : 0;
+    rect.right  = rect.right  < XN_VGA_X_RES-EXPAND_IMAGE ? rect.right+EXPAND_IMAGE  : XN_VGA_X_RES;
+    rect.bottom = rect.bottom < XN_VGA_Y_RES-EXPAND_IMAGE ? rect.bottom+EXPAND_IMAGE : XN_VGA_Y_RES;
+    rect.left   = rect.left   > EXPAND_IMAGE ? rect.left-EXPAND_IMAGE   : 0;
+
+    IplImage* img1 = cvCreateImageHeader(cvSize(640,480), 8, 3);
+    cvSetData(img1,ucpImage, 640*3);
+    cvCvtColor(img1,img1,CV_RGB2BGR);
+
+    /* sets the Region of Interest
+       Note that the rectangle area has to be __INSIDE__ the image */
+    cvSetImageROI(img1, cvRect(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top));
+
+    /* create destination image
+       Note that cvGetSize will return the width and the height of ROI */
+    IplImage *rgbimg = cvCreateImage(cvGetSize(img1),
+                                   img1->depth,
+                                   img1->nChannels);
+
+    /* copy subimage */
+    cvCopy(img1, rgbimg, NULL);
+
+    /* always reset the Region of Interest */
+    cvResetImageROI(img1);
+
+
+
+
+    // Clear the memory storage which was used before
+    cvClearMemStorage( MovingObject::storage );
+
+    bool hasFace = false;
+    CvPoint pt1, pt2, pt;
+    // Find whether the cascade is loaded, to find the faces. If yes, then:
+    if( MovingObject::cascade ) {
+
+        // There can be more than one face in an image. So create a growable sequence of faces.
+        // Detect the objects and store them in the sequence
+        CvSeq* faces = cvHaarDetectObjects( rgbimg, MovingObject::cascade, MovingObject::storage,
+                                            1.1, 2, CV_HAAR_DO_CANNY_PRUNING,
+                                            cvSize(20, 20) );
+
+        hasFace = (faces ? faces->total : 0) != 0 ? true : false;
+
+        if (hasFace){
+            // Loop the number of faces found.
+            for(int i = 0; i < (faces ? faces->total : 0); i++ ) {
+                CvRect* r = (CvRect*)cvGetSeqElem( faces, 1 );
+                // Find the dimensions of the face,and scale it if necessary
+                pt1.x = r->x;
+                pt2.x = (r->x+r->width);
+                pt1.y = r->y;
+                pt2.y = (r->y+r->height);
+
+                pt.x = r->x+(r->width)/2;
+                pt.y = r->y+(r->height)/2;
+
+                // Draw the rectangle in the input image
+                cvRectangle( rgbimg, pt1, pt2, CV_RGB(255,0,0), 3, 8, 0 );
+
+                if (pt.y >= rect.top && pt.y <= rect.bottom && pt.x >= rect.left && pt.x <= rect.right) { //is it inside the rectangle containing the person
+                    hasFace = true;
+                }else{
+                    hasFace = false;
+                }
+            }
+            /*XnUInt32 nFrame2D;
+            gen.player.TellFrame(gen.image.GetName(), nFrame2D);
+            std::ostringstream file;
+            file << dir << "/faces/faces-" << id << "-" << nFrame2D << "-" << hasFace << ".png";
+            cv::imwrite(file.str(), rgbimg);
+
+            chmod(file.str().c_str(), 0777);
+            printf("hasFace: %d   %d\n", hasFace, (faces ? faces->total : 0));
+            */
+
+        }
+
+    }
+
+    // Release the temp image created.
+    cvReleaseImageHeader(&rgbimg);
+
+    return hasFace;
 }
 
 

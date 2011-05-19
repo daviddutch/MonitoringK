@@ -135,6 +135,8 @@ int Processor::start(int argc, char **argv) {
     XnUInt32 nFrame, nFrameTot;
     instance->gen->player.GetNumFrames(instance->strNodeName, nFrameTot);
 
+    MovingObject::init();
+
     //Loop each frames with windows output or not
     if (!isDisplay){
         while(nFrame != nFrameTot -2){
