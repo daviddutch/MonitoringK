@@ -342,8 +342,21 @@ std::vector<Frame> MovingObject::getFrames(){
     return frames;
 }
 
+void MovingObject::checkMovementSimple(){
+    float zStart = frames[0].getCom().Z;
+    float zEnd = frames[frames.size()-1].getCom().Z;
+    string event = "Unknown movement";
+    if(zStart > zEnd){
+        event = "Entering";
+    }else{
+        event = "Going out";
+    }
+    events.push_back(Event(frames[0].getId(), frames[frames.size()-1].getId(), event.c_str()));
+}
+//TODO : Fix bugs
 void MovingObject::checkMovement() {
     int currentMovement = -1 ; // 0 : unknown   1 : going out   2 : entering
+    int tempMovement = -1;
     float lastZ = 0;
     int startFrameCurrentMovement = frames[0].getId();
     int balanceCount=0;
@@ -353,39 +366,48 @@ void MovingObject::checkMovement() {
 
     for (int i=0;i<frames.size();i++){
         float z = frames[i].getCom().Z; //get the current human depth
+        //printf("%d z:%f\n",id, z);
         if(z < 10000.0 && z > 0.1){   //possible value
             int move;
-            if(lastZ - z > 0){  //Difference between 2 frames
+            if(lastZ >= z){  //Difference between 2 frames
                 move = 2;
                 if(currentMovement == move){
+                    //Nothing to do
+                }else if(tempMovement == move){
                     balanceCount++;
                 }else{
                     balanceCount = 1;
-                    typeMovement = "entering";
+
                 }
             }else{
                 move = 1;
                 if(currentMovement == move){
+                    //Nothing to do
+                }else if(tempMovement == move){
                     balanceCount--;
                 }else{
                     balanceCount = -1;
-                    typeMovement = "going out";
+
                 }
             }
-            if ( abs(balanceCount)==3){ //if movement seems stable
+            if ( abs(balanceCount)==10 && currentMovement != move){ //if movement seems stable
                 if (firstChange){
                     firstChange = false;
                 }else{
                     newChange = true;
                 }
+                currentMovement = move;
+                typeMovement = tempMovement==2 ? "going out" :"entering" ;
+                //printf("new movement stable: %s\n", typeMovement.c_str());
             }
             if(newChange || i==(frames.size()-1)){  //if changement of direction or end of frames
                 //Add new event with information
+                //printf("new event %d: %d,%d,%s\n",id, startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str());
                 events.push_back(Event(startFrameCurrentMovement, frames[i].getId()-1, typeMovement.c_str()));
                 startFrameCurrentMovement = frames[i].getId();
                 newChange = false;
             }
-            currentMovement = move; //update movement and current Z
+            tempMovement = move; //update movement and current Z
             lastZ = z;
         }
     }
@@ -394,8 +416,6 @@ void MovingObject::checkMovement() {
 void MovingObject::computeDistance() {
     float distance = 0.0;
     XnPoint3D current;
-    if(frames.size()<=0)
-        return;
     XnPoint3D last = frames[0].getCom();
     for (int i=1;i<frames.size();i++){
         current = frames[i].getCom();
@@ -407,6 +427,7 @@ void MovingObject::computeDistance() {
 }
 
 float MovingObject::getDistance(XnPoint3D p1, XnPoint3D p2) {
+    //sqrt[(Xa-Xb)²+(Ya-Yb)²+(Za-Zb)²]
     return sqrt(pow(p1.X-p2.X,2) + pow(p1.Y-p2.Y,2) + pow(p1.Z-p2.Z,2));
 }
 
@@ -415,7 +436,7 @@ void MovingObject::toXML(TiXmlElement* sequenceNode) {
         return;
 
     computeDistance();
-    checkMovement();
+    checkMovementSimple();
 
     int endFrameNo;
     endFrameNo = frames[frames.size()-1].getId();

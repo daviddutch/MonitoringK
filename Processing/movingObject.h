@@ -190,12 +190,20 @@ private:
     void outputDepth(Rect rect, std::string file);
 
     /**
+     * @brief Compute Events of MovingObject (Not working..)
+     *
+     * Compute Events of MovingObject (Not working..)
+     *
+     */
+    void checkMovement();
+
+    /**
      * @brief Compute Events of MovingObject
      *
      * Compute Events of MovingObject
      *
      */
-    void checkMovement();
+    void checkMovementSimple();
 
     /**
      * @brief Compute totale distance of MovingObject
