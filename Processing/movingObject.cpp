@@ -731,6 +731,8 @@ bool MovingObject::isObjectHuman() {
                     hasFace = false;
                 }
             }
+            /* Uncomment to output debug information for the face detection
+
             XnUInt32 nFrame2D;
             gen.player.TellFrame(gen.image.GetName(), nFrame2D);
             std::ostringstream file;
@@ -739,7 +741,7 @@ bool MovingObject::isObjectHuman() {
 
             chmod(file.str().c_str(), 0777);
             printf("hasFace: %d   %d\n", hasFace, (faces ? faces->total : 0));
-
+            */
 
         }
 

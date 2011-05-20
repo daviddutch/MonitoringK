@@ -36,19 +36,30 @@ Processor* Processor::getInstance() {
 }
 
 int Processor::start(int argc, char **argv) {
+
+    //get the path of exe dir
+    path = argv[0];
+    int pos = path.find_last_of("/")+1;
+    if (pos > 0 ){
+        path = path.substr(0, pos);
+    }else{
+        path = "";
+    }
+
     fileName = argv[1];         //ONI file
     bool isDisplay = false;     //display or not the depth scene
     if(argc>2)
         isDisplay=true;
 
     //get the name of file without path
-    int pos = fileName.find_last_of("/") +1;
+    pos = fileName.find_last_of("/") +1;
     if (pos < 0 ) pos = 0;
     fileName = fileName.substr(pos);
     dateStart = fileName.substr(0,fileName.find("."));
 
     //Get the config
-    char filename[] = "config.xml";
+    std::string tmp =  path + "config.xml";
+    const char *filename = tmp.c_str();
     TiXmlDocument config(filename);
     if (!config.LoadFile()) {
         printf("Error while loading config!\n");
@@ -66,6 +77,8 @@ int Processor::start(int argc, char **argv) {
         faceDetection = root->FirstChildElement("faceDetection");
         active = faceDetection->Attribute("active");
         cascadeFile = faceDetection->Attribute("cascadeFile");
+        tmp =  path + cascadeFile;
+        cascadeFile = tmp.c_str();
     }
     MovingObject::init(active, cascadeFile);
 

@@ -85,6 +85,7 @@ private:
     TiXmlDocument doc;          /*!< XML document */
     TiXmlElement* movieNode;    /*!< XML root element */
     std::string dateStart;      /*!< Start date of movie */
+    std::string path;           /*!< path of exe (Processing) */
     std::string fileName;       /*!< fileName ONI */
     const XnChar* strNodeName;  /*!< Node name OpenNI */
 

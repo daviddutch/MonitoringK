@@ -5,7 +5,6 @@
 #include <GL/glut.h>
 #include <cv.h>
 #include <cxcore.h>
-#include <cvaux.h>
 #include <highgui.h>
 #include <iostream>
 #include <string>
@@ -27,15 +26,19 @@ using namespace std;
                 return rc;													\
         }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: OniToAvi ONI_file [AVI_path]\n");
+        printf("\tONI_file: path to the ONI source file\n");
+        printf("\tAVI_file: Optional path for the avi output\n");
+        printf("\texample: Processing example.oni\n");
+        return 0;
+    }
+
     XnStatus nRetVal;
     xn::Context g_Context;
     xn::ImageGenerator g_ImageGenerator;
-    if (argc < 2)
-    {
-        return 0;
-    }
+
     string fileName;
     char fileNameBuffer[50];
     fileName = argv[1];
@@ -94,8 +97,7 @@ int main(int argc, char *argv[])
     writer=cvCreateVideoWriter(fileNameBuffer,CV_FOURCC('P','I','M','1'),
                                     fps,cvSize(frameW,frameH),isColor);
 
-    while (TRUE)
-    {
+    while (TRUE) {
         // Update to next frame
         nRetVal = g_Context.WaitOneUpdateAll(g_ImageGenerator);
 

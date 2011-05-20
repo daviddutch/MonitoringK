@@ -38,9 +38,12 @@ int main(int argc, char *argv[]) {
                 break;
         }
     } else {
-        printf("\nRecorder usage : recorder [duration sec]* [destination ONI file] [Time start] \n");
-        printf("       exemple : recorder 120 /home/user/ 12:30 \n");
-        printf("       exemple : recorder 60 \n");
+        printf("Usage: recorder duration_sec [destination_path] [start_time]\n");
+        printf("\tduration_sec: duration time of the recording in seconds\n");
+        printf("\tdestination_path: Optional path in which the oni file will be recorded\n");
+        printf("\tstart_time: Optional time at which the recording must start\n");
+        printf("\texample: recorder 120 /home/user/ 12:30 \n");
+        printf("\texample: recorder 60 \n");
         return 0;
     }
 

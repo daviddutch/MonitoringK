@@ -24,9 +24,10 @@ int main(int argc, char **argv) {
         processor = Processor::getInstance ();
         processor->start(argc, argv);
     }else{
-        printf("\nProcessor usage : Processing [ONI file]* [display result]\n");
-        printf("       example : recorder 2011_03_29[15_14_59].oni 1\n");
-        printf("       example : recorder 2011_03_29[15_14_59].oni\n");
+        printf("Usage: Processing ONI_file [display_window]\n");
+        printf("\tONI_file: path to the ONI source file\n");
+        printf("\tdisplay_window: optional default is 0. Values:\n\t\t\t0 doesn't display any window\n\t\t\t1 displays the video while processing\n");
+        printf("\texample: Processing example.oni\n");
         return 0;
     }
 }
