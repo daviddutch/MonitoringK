@@ -33,7 +33,7 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     metric.validWidth = 0;
     isObjectHumanCount = 7;
     detectTypeCount = 0;
-    objectType = "Other";
+    objectType = "Unknown";
 
 }
 void MovingObject::init(bool active, const char* cascadeFile) {
@@ -196,6 +196,13 @@ void MovingObject::update(Metric newMetric) {
                 }
             }
         }
+        if (rect.top    == XN_VGA_Y_RES+1 ||
+            rect.right  == -1 ||
+            rect.bottom == -1 ||
+            rect.left   == XN_VGA_X_RES+1){
+            return; //this should not happen. OpenNI bug ?
+        }
+
         frames.push_back(Frame(nFrame2D, rect, com));
 
         computeObjectType();
@@ -554,12 +561,14 @@ float MovingObject::computeWidth() {
     if(lcom2.Z > 0.1 && rcom2.Z > 0.1){
         return rcom2.X - lcom2.X;
     }else{
+        /*
         printf("ERROR METRIC\n");
         printf("%d real world right : (%f, %f, %f)\n", xnUserId, rcom.X, rcom.Y, rcom.Z);
         printf("%d real world 2 right : (%f, %f, %f)\n", xnUserId, rcom2.X, rcom2.Y, rcom2.Z);
         printf("%d real world left : (%f, %f, %f)\n", xnUserId, lcom.X, lcom.Y, lcom.Z);
         printf("%d real world 2 left : (%f, %f, %f)\n", xnUserId, lcom2.X, lcom2.Y, lcom2.Z);
         printf("%d com  world : (%f, %f, %f)\n", xnUserId, com.X, com.Y, com.Z);
+        */
         return -1;
     }
 }
@@ -644,6 +653,7 @@ void MovingObject::computeObjectType() {
 }
 bool MovingObject::isObjectHuman() {
     Rect rect = frames.back().getZone();
+    Rect crop;
 
     //Make a copy of the complete ImageMap
     const XnRGB24Pixel* pImage = gen.image.GetRGB24ImageMap();
@@ -652,23 +662,17 @@ bool MovingObject::isObjectHuman() {
     //Fillup the whole image
     for (int y=0; y<XN_VGA_Y_RES; y++) {
         for(int x=0;x<XN_VGA_X_RES;x++) {
-            if (y>=rect.top && y<=rect.bottom && x>=rect.left && x<=rect.right) { //is it inside the rectangle containing the person
-                ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
-                ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
-                ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
-            } else {
-                ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
-                ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
-                ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
-            }
+            ucpImage[y * XN_VGA_X_RES + x ].nRed   = pImage[y * XN_VGA_X_RES + x ].nRed;
+            ucpImage[y * XN_VGA_X_RES + x ].nGreen = pImage[y * XN_VGA_X_RES + x ].nGreen;
+            ucpImage[y * XN_VGA_X_RES + x ].nBlue  = pImage[y * XN_VGA_X_RES + x ].nBlue;
         }
     }
 
     int EXPAND_IMAGE = 20;
-    rect.top    = rect.top    > EXPAND_IMAGE ? rect.top-EXPAND_IMAGE    : 0;
-    rect.right  = rect.right  < XN_VGA_X_RES-EXPAND_IMAGE ? rect.right+EXPAND_IMAGE  : XN_VGA_X_RES;
-    rect.bottom = rect.bottom < XN_VGA_Y_RES-EXPAND_IMAGE ? rect.bottom+EXPAND_IMAGE : XN_VGA_Y_RES;
-    rect.left   = rect.left   > EXPAND_IMAGE ? rect.left-EXPAND_IMAGE   : 0;
+    crop.top    = rect.top    > EXPAND_IMAGE ? rect.top-EXPAND_IMAGE    : 0;
+    crop.right  = rect.right  < XN_VGA_X_RES-EXPAND_IMAGE ? rect.right+EXPAND_IMAGE  : XN_VGA_X_RES-1;
+    crop.bottom = rect.bottom < XN_VGA_Y_RES-EXPAND_IMAGE ? rect.bottom+EXPAND_IMAGE : XN_VGA_Y_RES-1;
+    crop.left   = rect.left   > EXPAND_IMAGE ? rect.left-EXPAND_IMAGE   : 0;
 
     IplImage* img1 = cvCreateImageHeader(cvSize(640,480), 8, 3);
     cvSetData(img1,ucpImage, 640*3);
@@ -676,8 +680,18 @@ bool MovingObject::isObjectHuman() {
 
     /* sets the Region of Interest
        Note that the rectangle area has to be __INSIDE__ the image */
-    cvSetImageROI(img1, cvRect(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top));
-
+    try
+    {
+        cvSetImageROI(img1, cvRect(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top));
+    }
+    catch( cv::Exception& e )
+    {
+        const char* err_msg = e.what();
+        std::cout << "error" << std::endl << err_msg << std::endl;
+        std::cout << "rect " << rect.top << " " << rect.right << " " << rect.bottom << " " << rect.left << std::endl;
+        std::cout << "crop " << crop.top << " " << crop.right << " " << crop.bottom << " " << crop.left << std::endl;
+        return false;
+    }
     /* create destination image
        Note that cvGetSize will return the width and the height of ROI */
     IplImage *rgbimg = cvCreateImage(cvGetSize(img1),
