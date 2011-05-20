@@ -43,7 +43,7 @@ public:
      */
     MovingObject(XnUserID pId, Generators& generators, std::string dir);
 
-    static void init();
+    static void init(bool active, const char* cascade);
     /**
      * @brief get user id supply by OpenNI
      *

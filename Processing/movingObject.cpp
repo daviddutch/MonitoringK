@@ -31,20 +31,21 @@ MovingObject::MovingObject(XnUserID pId, Generators& generators, std::string d) 
     metric.height = 0;
     metric.width = 0;
     metric.validWidth = 0;
-    isObjectHumanCount = 0;
+    isObjectHumanCount = 7;
     detectTypeCount = 0;
     objectType = "Other";
 
 }
-void MovingObject::init() {
+void MovingObject::init(bool active, const char* cascadeFile) {
     // Load the HaarClassifierCascade
-    cascade = (CvHaarClassifierCascade*)cvLoad("haarcascade_frontalface_alt.xml", 0, 0, 0 );
+    if (active){
+        cascade = (CvHaarClassifierCascade*)cvLoad(cascadeFile, 0, 0, 0 );
 
-    // Check whether the cascade has loaded successfully. Else report and error and quit
-    if( !cascade )
-    {
-        fprintf( stderr, "ERROR: Could not load classifier cascade\n" );
-        return;
+        // Check whether the cascade has loaded successfully. Else report and error and quit
+        if( !cascade ) {
+            fprintf( stderr, "ERROR: Could not load classifier cascade\n" );
+            return;
+        }
     }
 
     // Allocate the memory storage
@@ -626,12 +627,19 @@ Metric MovingObject::computeMetrics(XnPoint3D com) {
 void MovingObject::computeObjectType() {
     detectTypeCount++;
     if (detectTypeCount>200) return;
-    if (isObjectHumanCount<10 && isObjectHuman()) {
-        isObjectHumanCount++;
+
+    if (isObjectHumanCount==0) return;
+
+    if (isObjectHuman()) {
+        isObjectHumanCount--;
+        if (isObjectHumanCount==0) {
+            objectType = "Human";
+            return;
+        }
+    }else{
+        isObjectHumanCount = 7;
     }
-    if (isObjectHumanCount==10) {
-        objectType = "Human";
-    }
+
 
 }
 bool MovingObject::isObjectHuman() {
@@ -723,7 +731,7 @@ bool MovingObject::isObjectHuman() {
                     hasFace = false;
                 }
             }
-            /*XnUInt32 nFrame2D;
+            XnUInt32 nFrame2D;
             gen.player.TellFrame(gen.image.GetName(), nFrame2D);
             std::ostringstream file;
             file << dir << "/faces/faces-" << id << "-" << nFrame2D << "-" << hasFace << ".png";
@@ -731,7 +739,7 @@ bool MovingObject::isObjectHuman() {
 
             chmod(file.str().c_str(), 0777);
             printf("hasFace: %d   %d\n", hasFace, (faces ? faces->total : 0));
-            */
+
 
         }
 

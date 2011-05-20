@@ -47,6 +47,30 @@ int Processor::start(int argc, char **argv) {
     fileName = fileName.substr(pos);
     dateStart = fileName.substr(0,fileName.find("."));
 
+    //Get the config
+    char filename[] = "config.xml";
+    TiXmlDocument config(filename);
+    if (!config.LoadFile()) {
+        printf("Error while loading config!\n");
+        return 1;
+    }
+    TiXmlElement *root, *video, *faceDetection;
+    root = config.FirstChildElement( "config" );
+    int fps = 24;
+    bool active = false;
+    const char* cascadeFile;
+
+    if (root) {
+        video = root->FirstChildElement("video");
+        fps = atoi(video->Attribute("fps2d"));
+        faceDetection = root->FirstChildElement("faceDetection");
+        active = faceDetection->Attribute("active");
+        cascadeFile = faceDetection->Attribute("cascadeFile");
+    }
+    MovingObject::init(active, cascadeFile);
+
+
+
     //create directory for media
     instance->dir = "movieData/"+fileName.substr(0,fileName.find_last_of("."));
     mkdir("movieData", 0777);
@@ -135,7 +159,6 @@ int Processor::start(int argc, char **argv) {
     XnUInt32 nFrame, nFrameTot;
     instance->gen->player.GetNumFrames(instance->strNodeName, nFrameTot);
 
-    MovingObject::init();
 
     //Loop each frames with windows output or not
     if (!isDisplay){
